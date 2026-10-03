@@ -1,0 +1,17 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layers/integrity-mismatch/main",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [
+    {
+      "uri": "../chain/sub/base.ifcx",
+      "integrity": "sha256-7MS8auGWMUQ+WLnuWqyWiV/H+HmBwCh0/BhiTnYyvRk="
+    }
+  ],
+  "schemas": {},
+  "data": []
+}

@@ -1,0 +1,45 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layers/chain/base",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [],
+  "schemas": {
+    "demo::fire": {
+      "value": {
+        "dataType": "Enum",
+        "enumRestrictions": {
+          "options": [
+            "EI30",
+            "EI60",
+            "EI90"
+          ]
+        }
+      }
+    },
+    "demo::height": {
+      "value": {
+        "dataType": "Real"
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "wall",
+      "attributes": {
+        "demo::fire": "EI90",
+        "demo::height": 3.0
+      }
+    },
+    {
+      "path": "storey",
+      "children": {
+        "Wall": "wall",
+        "Door": "door"
+      }
+    }
+  ]
+}

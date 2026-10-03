@@ -20,3 +20,17 @@ indexmap = { version = "2", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 # preserve_order keeps key order on round trip; float_roundtrip keeps every f64 exact.
 serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+# Import `integrity` checks (SRI-style sha256/384/512 digests).
+base64 = { version = "0.23", optional = true }
+sha2 = { version = "0.11", optional = true, default-features = false }
+
+[features]
+default = ["integrity"]
+# Check `integrity` on imports. Without it, an import that carries an
+# `integrity` value is rejected rather than loaded unchecked.
+integrity = ["dep:base64", "dep:sha2"]
+# `FsResolver`: load imported layers from the local filesystem.
+fs = []
+
+[package.metadata.docs.rs]
+all-features = true

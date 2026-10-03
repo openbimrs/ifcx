@@ -7,8 +7,17 @@
 //! This crate reads and writes single `ifcx_alpha` files losslessly, flattens
 //! layered nodes by path ([`flatten`]), and checks attribute values against a
 //! file's `schemas` ([`IfcxFile::validate`], [`validate_attributes`]; rules in
-//! [`validate`](mod@validate)). Building the composed tree and imports are not
-//! implemented yet.
+//! [`validate`](mod@validate)). [`layers`] loads a file with its imports
+//! through a caller-supplied resolver and federates them into one file, ready
+//! to flatten. Building the composed tree is not implemented yet.
+//!
+//! # Features
+//!
+//! - `integrity` (default): check SHA-2 `integrity` values on imports. Without
+//!   it, an import that carries `integrity` is rejected rather than loaded
+//!   unchecked.
+//! - `fs`: [`layers::FsResolver`], which loads imports from local files. The
+//!   crate does no filesystem access otherwise and never uses the network.
 //!
 //! ```
 //! use openbim_ifcx::IfcxFile;
@@ -30,6 +39,7 @@
 
 pub mod compose;
 mod json;
+pub mod layers;
 mod model;
 pub mod validate;
 
