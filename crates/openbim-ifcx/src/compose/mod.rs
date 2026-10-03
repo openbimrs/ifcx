@@ -4,8 +4,10 @@
 //! Composition has three phases upstream: federation puts the nodes of all
 //! layers into one list in layer order, flattening merges the nodes that
 //! share a path ([`flatten`]), and composition expands `inherits` and
-//! `children` into a tree.
+//! `children` into a tree ([`compose`]).
 
 mod flatten;
+mod tree;
 
 pub use flatten::{flatten, FlatNode};
+pub use tree::{compose, ComposeError, ComposedNode, Composition};

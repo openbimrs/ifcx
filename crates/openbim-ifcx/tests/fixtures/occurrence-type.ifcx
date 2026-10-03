@@ -1,0 +1,74 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/occurrence-type",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03T12:00:00Z"
+  },
+  "imports": [],
+  "schemas": {},
+  "data": [
+    {
+      "path": "site",
+      "children": { "Storey": "storey" },
+      "attributes": { "example::name": "Site" }
+    },
+    {
+      "path": "storey",
+      "children": { "Wall A": "wall-a", "Wall B": "wall-b" },
+      "attributes": { "example::name": "Ground floor", "example::elevation": 0 }
+    },
+    {
+      "path": "wall-type",
+      "children": { "Body": "wall-type-body", "Axis": "wall-type-axis" },
+      "attributes": { "example::class": "WallType", "example::fireRating": "EI30" }
+    },
+    {
+      "path": "wall-type-body",
+      "children": { "Material": "concrete" },
+      "attributes": {
+        "example::mesh": {
+          "points": [[0, 0, 0], [4, 0, 0], [4, 0.25, 0], [0, 0.25, 0]],
+          "faceVertexIndices": [0, 1, 2, 0, 2, 3]
+        }
+      }
+    },
+    {
+      "path": "wall-type-axis",
+      "attributes": { "example::curve": [[0, 0.125], [4, 0.125]] }
+    },
+    { "path": "concrete", "attributes": { "example::colour": "light grey" } },
+    {
+      "path": "wall-a",
+      "inherits": { "Type": "wall-type" },
+      "attributes": {
+        "example::class": "Wall",
+        "example::fireRating": "EI60",
+        "example::transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+      }
+    },
+    {
+      "path": "wall-b",
+      "inherits": { "Type": "wall-type" },
+      "children": { "Axis": null, "Opening": "opening" },
+      "attributes": {
+        "example::class": "Wall",
+        "example::transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [5, 0, 0, 1]]
+      }
+    },
+    { "path": "wall-b/Body", "attributes": { "example::colour": "red" } },
+    { "path": "wall-b/Body/Material", "attributes": { "example::colour": "dark grey" } },
+    { "path": "wall-b/Missing", "attributes": { "example::colour": "never applied" } },
+    {
+      "path": "opening",
+      "children": { "Cut": "wall-type/Body" },
+      "attributes": { "example::class": "Opening" }
+    },
+    {
+      "path": "annotations",
+      "children": { "Note": "note" }
+    },
+    { "path": "note", "attributes": { "example::text": "Check wall B" } }
+  ]
+}

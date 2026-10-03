@@ -12,6 +12,8 @@ from `buildingSMART/IFC5-development`, which publishes no license.
 | `valid-attributes.ifcx` | Attributes of every checked `dataType` that match their schemas; nested arrays, optional object keys, schema `inherits`, an `__internal` attribute, and a later opinion replacing an earlier value |
 | `invalid-attributes.ifcx` | Several failing attributes across two paths: wrong types, a fraction for `Integer`, an unknown enum option, a missing schema, array bounds, a missing object key, and a key needing JSON pointer escaping |
 | `layer-base.ifcx`, `layer-edit.ifcx` | Two layers editing the same nodes: attribute override, `null` attribute, child replacement, `null` child, `null` inherit, a path addressing a child (`wall/Body`), and two nodes sharing a path within one layer |
+| `occurrence-type.ifcx` | Two wall occurrences inheriting a type with body and axis children; a local attribute overriding an inherited one; a `null` child deleting an inherited one; paths editing an inherited child two levels deep and a missing child; a `head/child` reference; two roots |
+| `occurrence-type.composed.json` | The tree upstream's TypeScript `CreateArtificialRoot` composes from `occurrence-type.ifcx`, as `{path, attributes, children}` objects. Generated from the fixture above; it holds no upstream content |
 | `unknown-fields.ifcx` | Fields the draft does not define at every level, an unknown `dataType`, and numbers that only survive with exact float and integer handling |
 
 | `layers/chain/main.ifcx`, `mid.ifcx`, `sub/base.ifcx` | Three-file import chain `main → mid → sub/base` with a relative path into a subdirectory and a correct `sha256` integrity value; each layer sets the same attribute, adds a schema, and `mid` deletes a child that `base` defines |
@@ -24,7 +26,8 @@ them. The `layers/` files resolve relative to each other. Integrity values
 hash the committed bytes, so `.gitattributes` keeps `*.ifcx` line endings
 unchanged.
 
-`tests/upstream_round_trip.rs` and `tests/upstream_validation.rs` check
+`tests/upstream_round_trip.rs`, `tests/upstream_validation.rs`, and
+`tests/upstream_composition.rs` check
 upstream's own examples from a local checkout named by `IFCX_UPSTREAM_DIR`,
 without committing them.
 `tests/upstream_layers.rs` (feature `fs`) builds layer stacks for those
