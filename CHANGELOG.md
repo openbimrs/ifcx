@@ -65,3 +65,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Workspace crates live under `crates/`, as in `openbimrs/ifc`.
 - License changed from AGPL-3.0 to MIT before any code or release.
 - MSRV is 1.88, matching `openbim-ifc` and `openbim-step`.
+
+### Fixed
+
+- `scripts/gltf-validate.sh` exports the fixtures with `--resolve-imports`,
+  so `imports-panel-type.ifcx` converts, and names an upstream example it
+  cannot export instead of exiting silently. Found by the first upstream
+  drift run (#56).
