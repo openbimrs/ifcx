@@ -12,7 +12,7 @@ imports: import https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-mat/prop@v
 round-trip: 47 files, 0 failures
 validation: 47 files: 47 valid, 0 need imported schemas, 0 invalid
 composition: 47 files: 35 compose alone, 12 on their folder, 0 fail
-layers: 37 stacks built, 4 unresolved, 0 failures
+layers: 37 stacks built (37 valid), 4 unresolved, 0 failures
 layers:   unresolved   4x https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-mat/prop@v1.0.0.ifcx
 decode: 47 files: 41840 transforms; 1925 meshes (720241 triangles, 522435 vertices); 85 curve attributes (85 polylines, 9946 vertices, 0 unsupported); 0 null deletions; 0 failures
 decode: 47 files: point clouds pcd 2, array 4, base64 2 (102761 points, 4 coloured); visibility 62, diffuseColor 9366, opacity 458, gltf::material 2 (2 PBR); 0 failures

@@ -9,6 +9,40 @@ repository.
 
 ## [Unreleased]
 
+No breaking change: every addition below is new API, and existing
+functions and types keep their signatures.
+
+### Added
+
+- `LayerStack::validate` checks a layer stack built with its imports: the
+  schemas of every layer, merged as `federate` does, against the attributes
+  of every layer, merged per path as `flatten` does. An attribute whose
+  schema lives only in an imported file now validates. `validate_flat`
+  checks the output of `flatten` or `flatten_owned` (#42).
+- `LayerStackBuilder::build_all` stacks several layers, weakest first, as
+  the imports of a main layer without data, as upstream's `ifcx compose`
+  does (#42).
+- `flatten_owned`, `FlatNode::merge_owned`, `federate_owned`, and
+  `LayerStack::into_federated` consume their input and move nodes and
+  attribute values instead of copying them. In the opt-in
+  `upstream_composition` test (release build) flattening `Tekla House`
+  drops from 88 ms to 18 ms and `Railway_project_IFC5` from 60 ms to 8 ms
+  (#43).
+
+### Changed
+
+- `IfcxFile::validate` merges attributes per path by reference instead of
+  copying every value; the report is unchanged (#43).
+
+### Migration
+
+- To flatten without copying, replace `flatten(&file.data)` with
+  `flatten_owned(file.data)` where the nodes are not needed afterwards, and
+  `stack.federate()` with `stack.into_federated()`. `flatten` over borrowed
+  nodes still copies each attribute value, as before.
+- To validate a file with its imports, build its layer stack and call
+  `stack.validate()` instead of `file.validate()`.
+
 ## [0.1.0] - 2026-10-03
 
 First release: lossless reading and writing, layer flattening and

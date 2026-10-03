@@ -9,5 +9,5 @@
 mod flatten;
 mod tree;
 
-pub use flatten::{flatten, FlatNode};
+pub use flatten::{flatten, flatten_owned, FlatNode};
 pub use tree::{compose, ComposeError, ComposedNode, Composition};

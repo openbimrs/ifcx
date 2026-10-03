@@ -47,10 +47,21 @@
 //! # Flattened and raw nodes
 //!
 //! Upstream validates flattened nodes, after all opinions on a path have been
-//! merged. [`validate_attributes`] takes any `(path, attributes)` pairs, so it
-//! works on flattened nodes as well as on raw ones. [`IfcxFile::validate`]
-//! merges the attributes of nodes sharing a path, later opinions winning, as
-//! upstream's flattening does, before validating them.
+//! merged. [`validate_flat`] checks the output of [`flatten`](crate::flatten)
+//! or [`flatten_owned`](crate::flatten_owned). [`IfcxFile::validate`] merges
+//! the attributes of nodes sharing a path, later opinions winning, as
+//! flattening does, before validating them; it does not copy any value.
+//! [`validate_attributes`] takes any `(path, attributes)` pairs, and
+//! [`validate_nodes`] raw nodes as they are.
+//!
+//! # Imports
+//!
+//! A file's own `schemas` often do not describe its attributes: most
+//! upstream examples take them from imported files.
+//! [`LayerStack::validate`](crate::layers::LayerStack::validate) checks a
+//! layer stack built with its imports: the schemas of every layer, merged as
+//! `federate` does, against the attributes of every layer, merged per path as
+//! flattening does.
 
 use std::error::Error;
 use std::fmt;
@@ -58,6 +69,7 @@ use std::fmt;
 use indexmap::IndexMap;
 use serde_json::{Number, Value};
 
+use crate::compose::FlatNode;
 use crate::model::{DataType, IfcxFile, IfcxNode, IfcxSchema, IfcxValueDescription};
 
 /// Attribute ids with this prefix are not validated, as upstream.
@@ -264,6 +276,62 @@ where
     P: AsRef<str> + 'a,
     I: IntoIterator<Item = (P, &'a IndexMap<String, Value>)>,
 {
+    check_nodes(
+        schemas,
+        nodes.into_iter().map(|(path, attributes)| {
+            (
+                path,
+                attributes.iter().map(|(id, value)| (id.as_str(), value)),
+            )
+        }),
+    )
+}
+
+/// Checks flattened nodes, as [`flatten`](crate::flatten) or
+/// [`flatten_owned`](crate::flatten_owned) return them, against `schemas`.
+/// This is what upstream validates: one merged node per path, in the
+/// flattened order.
+///
+/// ```
+/// use openbim_ifcx::{flatten_owned, validate_flat, IfcxFile};
+///
+/// let file = IfcxFile::from_json_str(r#"{
+///     "header": {"id": "demo", "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+///                "author": "someone", "timestamp": "2026-10-03"},
+///     "imports": [],
+///     "schemas": {"x::height": {"value": {"dataType": "Real"}}},
+///     "data": [{"path": "w", "attributes": {"x::height": "tall"}},
+///              {"path": "w", "attributes": {"x::height": 3.0}}]
+/// }"#)?;
+/// // Only the value that wins is checked.
+/// assert!(validate_flat(&file.schemas, &flatten_owned(file.data.clone())).is_valid());
+/// # Ok::<(), openbim_ifcx::ReadError>(())
+/// ```
+pub fn validate_flat(
+    schemas: &IndexMap<String, IfcxSchema>,
+    nodes: &IndexMap<String, FlatNode>,
+) -> ValidationReport {
+    check_nodes(
+        schemas,
+        nodes.iter().map(|(path, node)| {
+            (
+                path,
+                node.attributes
+                    .iter()
+                    .map(|(id, value)| (id.as_str(), &**value)),
+            )
+        }),
+    )
+}
+
+/// The shared loop: `(path, attributes)` pairs whose attributes are
+/// `(id, value)` pairs.
+fn check_nodes<'v, P, A, I>(schemas: &IndexMap<String, IfcxSchema>, nodes: I) -> ValidationReport
+where
+    P: AsRef<str>,
+    A: IntoIterator<Item = (&'v str, &'v Value)>,
+    I: IntoIterator<Item = (P, A)>,
+{
     let mut report = ValidationReport::default();
     for (path, attributes) in nodes {
         let path = path.as_ref();
@@ -310,21 +378,62 @@ impl IfcxFile {
     ///
     /// Nodes sharing a path are merged first, later attribute values
     /// replacing earlier ones, as upstream's flattening does; a failure is
-    /// reported once per path, in order of each path's first node. Imports
-    /// are not resolved, so attributes whose schemas live only in an imported
-    /// file are reported as [`FailureKind::MissingSchema`].
+    /// reported once per path, in order of each path's first node. The
+    /// result equals [`validate_flat`] over [`flatten`](crate::flatten) of
+    /// `data`, but no value is copied.
+    ///
+    /// Imports are not resolved, so attributes whose schemas live only in an
+    /// imported file are reported as [`FailureKind::MissingSchema`]. To
+    /// validate a file with its imports, build its
+    /// [`LayerStack`](crate::layers::LayerStack) and call
+    /// [`LayerStack::validate`](crate::layers::LayerStack::validate).
     pub fn validate(&self) -> Result<(), ValidationReport> {
-        let mut merged: IndexMap<&str, IndexMap<String, Value>> = IndexMap::new();
-        for node in &self.data {
-            let entry = merged.entry(node.path.as_str()).or_default();
-            if let Some(attributes) = &node.attributes {
-                for (id, value) in attributes {
-                    entry.insert(id.clone(), value.clone());
-                }
-            }
-        }
-        validate_attributes(&self.schemas, merged.iter().map(|(p, a)| (*p, a))).into_result()
+        check_merged(&self.schemas, &self.data).into_result()
     }
+}
+
+/// Merges the attributes of `nodes` per path, later values replacing earlier
+/// ones in place, as flattening does, without copying any value.
+fn merge_attributes<'a>(
+    nodes: impl IntoIterator<Item = &'a IfcxNode>,
+) -> IndexMap<&'a str, IndexMap<&'a str, &'a Value>> {
+    let mut merged: IndexMap<&str, IndexMap<&str, &Value>> = IndexMap::new();
+    for node in nodes {
+        let entry = merged.entry(node.path.as_str()).or_default();
+        for (id, value) in node.attributes.iter().flatten() {
+            entry.insert(id.as_str(), value);
+        }
+    }
+    merged
+}
+
+fn check_merged<'a>(
+    schemas: &IndexMap<String, IfcxSchema>,
+    nodes: impl IntoIterator<Item = &'a IfcxNode>,
+) -> ValidationReport {
+    let merged = merge_attributes(nodes);
+    check_nodes(
+        schemas,
+        merged
+            .iter()
+            .map(|(path, attributes)| (*path, attributes.iter().map(|(id, value)| (*id, *value)))),
+    )
+}
+
+/// Validates `files` as one federated file: schemas merged in order (a
+/// repeated id keeps its first position and takes the last value), and the
+/// data of every file merged per path in order.
+pub(crate) fn validate_files<'a>(
+    files: impl IntoIterator<Item = &'a IfcxFile>,
+) -> ValidationReport {
+    let files: Vec<&IfcxFile> = files.into_iter().collect();
+    let mut schemas: IndexMap<String, IfcxSchema> = IndexMap::new();
+    for file in &files {
+        for (id, schema) in &file.schemas {
+            schemas.insert(id.clone(), schema.clone());
+        }
+    }
+    check_merged(&schemas, files.iter().flat_map(|file| &file.data))
 }
 
 struct Checker<'s, 'r> {

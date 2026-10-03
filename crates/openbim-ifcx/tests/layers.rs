@@ -1,7 +1,9 @@
 //! Layer stacks: import order, federation, and typed failures.
 
-use openbim_ifcx::layers::{federate, LayerError, LayerStack, LayerStackBuilder, MemoryResolver};
-use openbim_ifcx::{flatten, IfcxFile};
+use openbim_ifcx::layers::{
+    federate, federate_owned, LayerError, LayerStack, LayerStackBuilder, MemoryResolver,
+};
+use openbim_ifcx::{flatten, flatten_owned, validate_flat, FailureKind, IfcxFile};
 use serde_json::{json, Value};
 
 /// A small layer with one `demo::value` opinion on path `root`.
@@ -115,6 +117,131 @@ fn federate_matches_upstream_for_files_in_given_order() {
         "a"
     );
     assert!(federate([]).is_none());
+}
+
+#[test]
+fn build_all_stacks_named_layers_like_a_synthetic_main_layer() {
+    let layers: &[(&str, &[&str])] = &[("a", &["c"]), ("b", &["a"]), ("c", &[])];
+    // Each named layer claims its place before any import is followed, so
+    // `b`'s import of `a` does not move `a`, and `a`'s import `c` follows it.
+    let stack = LayerStackBuilder::new(resolver(layers))
+        .build_all(["a", "b", "a"])
+        .unwrap();
+    assert_eq!(keys(&stack), ["a", "c", "b"]);
+    assert_eq!(stack.main().key(), "a");
+    let federated = stack.federate();
+    assert_eq!(federated.header.id, "a");
+    assert_eq!(attribute(&federated, "root", "demo::value"), "b");
+
+    let err = LayerStackBuilder::new(resolver(layers))
+        .build_all(["b", "gone"])
+        .unwrap_err();
+    assert!(
+        matches!(&err, LayerError::Missing { uri, importer: None } if uri == "gone"),
+        "{err}"
+    );
+    let err = LayerStackBuilder::new(resolver(layers))
+        .build_all(Vec::<String>::new())
+        .unwrap_err();
+    assert!(matches!(err, LayerError::Missing { importer: None, .. }));
+}
+
+#[test]
+fn owned_federation_and_flattening_equal_the_borrowed_ones() {
+    let stack = LayerStackBuilder::new(resolver(&[
+        ("main", &["a", "b"]),
+        ("a", &["c"]),
+        ("b", &[]),
+        ("c", &[]),
+    ]))
+    .build("main")
+    .unwrap();
+    let federated = stack.federate();
+    let files: Vec<IfcxFile> = stack.layers().iter().map(|l| l.file().clone()).collect();
+    assert_eq!(federate_owned(files).unwrap(), federated);
+    assert!(federate_owned(Vec::new()).is_none());
+    let flat = flatten(&federated.data);
+    let owned = stack.into_federated();
+    assert_eq!(owned, federated);
+    assert_eq!(flatten_owned(owned.data), flat);
+}
+
+/// A layer without data whose `schemas` describe `demo::height` as `Real`.
+fn schema_layer(id: &str) -> String {
+    json!({
+        "header": {"id": id, "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+                   "author": "openbimrs contributors", "timestamp": "2026-10-03"},
+        "imports": [], "data": [],
+        "schemas": {"demo::height": {"value": {"dataType": "Real"}}}
+    })
+    .to_string()
+}
+
+/// A layer setting `demo::height` on `wall` to `height`, importing `imports`,
+/// with no schemas of its own.
+fn height_layer(id: &str, imports: &[&str], height: Value) -> String {
+    let imports: Vec<Value> = imports.iter().map(|uri| json!({ "uri": uri })).collect();
+    json!({
+        "header": {"id": id, "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+                   "author": "openbimrs contributors", "timestamp": "2026-10-03"},
+        "imports": imports, "schemas": {},
+        "data": [{"path": "wall", "attributes": {"demo::height": height}}]
+    })
+    .to_string()
+}
+
+#[test]
+fn a_stack_validates_against_schemas_only_its_imports_define() {
+    let mut resolver = MemoryResolver::new();
+    resolver.insert("main", height_layer("main", &["schemas"], json!(2.5)));
+    resolver.insert("schemas", schema_layer("schemas"));
+    let stack = LayerStackBuilder::new(resolver).build("main").unwrap();
+
+    let alone = stack.main().file().validate().unwrap_err();
+    assert_eq!(alone.failures.len(), 1);
+    assert_eq!(alone.failures[0].kind, FailureKind::MissingSchema);
+    assert_eq!(stack.validate(), Ok(()));
+    // The same as validating the federated file or its flattened nodes.
+    let federated = stack.federate();
+    assert_eq!(federated.validate(), Ok(()));
+    assert!(validate_flat(&federated.schemas, &flatten(&federated.data)).is_valid());
+}
+
+#[test]
+fn a_stack_checks_only_the_value_that_wins_for_a_path() {
+    // `main` writes a string, its import `fix` overrides it with a number,
+    // and `schemas` says the value is `Real`.
+    let mut resolver = MemoryResolver::new();
+    resolver.insert(
+        "main",
+        height_layer("main", &["fix", "schemas"], json!("tall")),
+    );
+    resolver.insert("fix", height_layer("fix", &[], json!(3.0)));
+    resolver.insert("schemas", schema_layer("schemas"));
+    let stack = LayerStackBuilder::new(resolver.clone())
+        .build("main")
+        .unwrap();
+    assert_eq!(stack.validate(), Ok(()));
+
+    // Reversed: the import's string wins and is reported once, at its path.
+    resolver.insert(
+        "main",
+        height_layer("main", &["fix", "schemas"], json!(3.0)),
+    );
+    resolver.insert("fix", height_layer("fix", &[], json!("tall")));
+    let stack = LayerStackBuilder::new(resolver).build("main").unwrap();
+    let report = stack.validate().unwrap_err();
+    assert_eq!(report.failures.len(), 1, "{report}");
+    assert_eq!(report.failures[0].node, "wall");
+    assert!(matches!(
+        report.failures[0].kind,
+        FailureKind::TypeMismatch { .. }
+    ));
+    assert_eq!(stack.federate().validate(), Err(report.clone()));
+    assert_eq!(
+        validate_flat(&stack.federate().schemas, &flatten(&stack.federate().data)),
+        report
+    );
 }
 
 #[test]
@@ -252,6 +379,25 @@ mod fs {
         // `mid` deletes `Door`, but `base`, which `mid` imports, comes later
         // and adds it back.
         assert_eq!(nodes["storey"].children["Door"].as_deref(), Some("door"));
+    }
+
+    #[cfg(feature = "integrity")]
+    #[test]
+    fn a_chain_validates_with_its_imports_and_build_all_takes_paths() {
+        let main = fixture("chain/main.ifcx");
+        let stack = LayerStackBuilder::new(FsResolver::new())
+            .build(&main)
+            .unwrap();
+        assert_eq!(stack.validate(), Ok(()));
+
+        // Naming `base` before `main` puts it first; `main`'s imports still
+        // follow `main` and win.
+        let stack = LayerStackBuilder::new(FsResolver::new())
+            .build_all([fixture("chain/sub/base.ifcx"), main])
+            .unwrap();
+        let names: Vec<_> = stack.keys().map(file_name).collect();
+        assert_eq!(names, ["base.ifcx", "main.ifcx", "mid.ifcx"]);
+        assert_eq!(stack.validate(), Ok(()));
     }
 
     #[test]

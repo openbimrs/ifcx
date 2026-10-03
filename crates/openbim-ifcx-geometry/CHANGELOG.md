@@ -9,6 +9,21 @@ repository.
 
 ## [Unreleased]
 
+### Added
+
+- `ifcx2glb --resolve-imports` loads every layer's `imports` through
+  `openbim_ifcx::layers::FsResolver` before exporting, stacked as upstream's
+  `ifcx compose` does; `--mirror PREFIX=DIR` (repeatable) maps a URI prefix
+  such as `https://ifcx.dev/` to an offline copy. The example now flattens
+  with `flatten_owned` (#42, #43).
+- Test fixture `imports-panel-type.ifcx`, whose panels inherit a type only
+  its import defines, and `tests/imports.rs`, which exports it with the
+  import resolved (#42).
+- Dev-dependency on `openbim-ifcx` with feature `fs`, for the example and
+  its test. The example and tests use API added to `openbim-ifcx` after
+  0.1.0, so the `openbim-ifcx` requirement must move to that release when
+  this crate is next released.
+
 ## [0.1.0] - 2026-10-03
 
 First release: decoders for `ifcx_alpha` transforms, meshes, curves, point

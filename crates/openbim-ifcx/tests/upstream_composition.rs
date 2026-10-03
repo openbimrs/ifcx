@@ -17,7 +17,9 @@
 //! again on top of every other file of its folder below `examples/`, in
 //! sorted order.
 //!
-//! For each file the test prints the flatten time, the compose time, the number of
+//! For each file the test prints the flatten time ([`flatten_owned`], which
+//! moves the read nodes instead of copying their attribute values), the
+//! compose time, the number of
 //! distinct composed nodes, and the number of nodes in the expanded tree
 //! under the artificial root, which is what a deep copy per instance would
 //! allocate.
@@ -27,7 +29,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use openbim_ifcx::{compose, flatten, ComposeError, ComposedNode, Composition, IfcxFile};
+use openbim_ifcx::{compose, flatten_owned, ComposeError, ComposedNode, Composition, IfcxFile};
 
 fn ifcx_files(dir: &Path, out: &mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(dir).unwrap() {
@@ -62,7 +64,7 @@ fn example_folder(path: &Path) -> &Path {
 fn compose_stack(files: &[PathBuf]) -> (Result<Composition, ComposeError>, Duration, Duration) {
     let data: Vec<_> = files.iter().flat_map(|path| read(path).data).collect();
     let start = Instant::now();
-    let flat = flatten(&data);
+    let flat = flatten_owned(data);
     let flattened = Instant::now();
     let composed = compose(&flat);
     (composed, flattened - start, flattened.elapsed())

@@ -8,6 +8,12 @@
 //! `mirror/ifcx.dev/@openusd.org/usd@v1.ifcx`) to resolve them offline.
 //! Unresolved imports are reported, not failed; any other error fails.
 //!
+//! Each stack that builds is also validated with [`LayerStack::validate`]:
+//! the schemas of all its layers against the attributes of all its layers,
+//! merged per path. Every such stack must validate.
+//!
+//! [`LayerStack::validate`]: openbim_ifcx::layers::LayerStack::validate
+//!
 //! ```sh
 //! IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_MIRROR=../mirror \
 //!     cargo test -p openbim-ifcx --features fs --test upstream_layers -- --nocapture
@@ -48,7 +54,7 @@ fn upstream_examples_build_layer_stacks() {
     ifcx_files(Path::new(&dir), &mut files);
     files.sort();
 
-    let (mut built, mut unresolved, mut failures) = (0, BTreeMap::new(), Vec::new());
+    let (mut built, mut valid, mut unresolved, mut failures) = (0, 0, BTreeMap::new(), Vec::new());
     for path in &files {
         let file = IfcxFile::from_json_slice(&std::fs::read(path).unwrap()).unwrap();
         if file.imports.is_empty() {
@@ -73,8 +79,19 @@ fn upstream_examples_build_layer_stacks() {
                     .flat_map(|n| n.attributes.iter().flatten())
                     .filter(|(id, _)| !federated.schemas.contains_key(*id))
                     .count();
+                let validation = match stack.validate() {
+                    Ok(()) => {
+                        valid += 1;
+                        "valid".to_owned()
+                    }
+                    Err(report) => {
+                        let summary = format!("{} INVALID", report.failures.len());
+                        failures.push(format!("{name}: {report}"));
+                        summary
+                    }
+                };
                 eprintln!(
-                    "ok  {} layers, {} schemas, {} nodes, {undeclared} undeclared attribute values  {name}",
+                    "ok  {} layers, {} schemas, {} nodes, {undeclared} undeclared attribute values, {validation}  {name}",
                     stack.layers().len(),
                     federated.schemas.len(),
                     federated.data.len(),
@@ -95,7 +112,7 @@ fn upstream_examples_build_layer_stacks() {
         }
     }
     eprintln!(
-        "{built} stacks built, {} unresolved, {} failures",
+        "{built} stacks built ({valid} valid), {} unresolved, {} failures",
         unresolved.values().sum::<usize>(),
         failures.len()
     );
