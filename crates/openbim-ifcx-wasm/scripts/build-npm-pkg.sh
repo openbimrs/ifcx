@@ -101,5 +101,5 @@ for dts in "$out/openbim_ifcx_wasm.d.ts" "$out/bundler/openbim_ifcx_wasm.d.ts" "
     echo 'export * from "./fetch-imports.js";' >>"$dts"
 done
 
-IFCX_WASM_PKG="$out" node --test "$crate_dir/tests/js/smoke.mjs"
+IFCX_WASM_PKG="$out" node --test "$crate_dir/tests/js/smoke.mjs" "$crate_dir/tests/js/guide.mjs"
 node "$crate_dir/tools/check-package.mjs" "$out"

@@ -1,0 +1,99 @@
+:root {
+  --vp-c-brand-1: #0f766e;
+  --vp-c-brand-2: #0d9488;
+  --vp-c-brand-3: #14b8a6;
+  --vp-c-brand-soft: rgba(13, 148, 136, 0.14);
+}
+
+.dark {
+  --vp-c-brand-1: #5eead4;
+  --vp-c-brand-2: #2dd4bf;
+  --vp-c-brand-3: #14b8a6;
+}
+
+/* Generated tables are wide; scroll them inside the page on a phone
+   rather than widening the page. */
+.vp-doc table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.vp-doc td code {
+  white-space: nowrap;
+}
+
+/* Source-controlled diagrams keep their source available as a text fallback. */
+.diagram-frame {
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.diagram-canvas {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 200px;
+  overflow-x: auto;
+  padding: 1rem;
+  width: 100%;
+}
+
+.diagram-canvas svg {
+  height: auto;
+  max-width: 100%;
+}
+
+.diagram-canvas .nodeLabel p,
+.diagram-canvas .edgeLabel p {
+  line-height: 1.35;
+  margin: 0;
+}
+
+.diagram-error {
+  color: var(--vp-c-danger-1);
+  padding: 0 1rem;
+}
+
+.diagram-source {
+  border-top: 1px solid var(--vp-c-divider);
+  padding: 0.6rem 1rem 0.9rem;
+}
+
+.diagram-source summary {
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.diagram-source pre {
+  margin-bottom: 0;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.diagram-pan-hint {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .diagram-frame--wide .diagram-canvas {
+    justify-content: flex-start;
+  }
+
+  .diagram-frame--wide .diagram-canvas svg {
+    max-width: none;
+    min-width: 640px;
+  }
+
+  .diagram-frame--wide .diagram-pan-hint {
+    color: var(--vp-c-text-2);
+    display: block;
+    font-size: 0.78rem;
+    margin: 0;
+    padding: 0 1rem 0.65rem;
+  }
+}

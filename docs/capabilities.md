@@ -11,7 +11,7 @@ The upstream evidence below was recorded at buildingSMART/IFC5-development
 `.github/workflows/upstream-drift.yml`, which runs every opt-in upstream
 check and compares the results with `scripts/upstream-drift/baseline.txt`;
 any failure or changed result opens an `upstream-drift` issue (see
-[CONTRIBUTING.md](../CONTRIBUTING.md#upstream-drift)). A claim here stays
+[CONTRIBUTING.md](https://github.com/openbimrs/ifcx/blob/main/CONTRIBUTING.md#upstream-drift)). A claim here stays
 pinned to the revision it names until it is re-recorded.
 
 | Capability | Status | IFCX draft | Crate | Notes |

@@ -1,0 +1,22 @@
+[
+  {
+    "lib": "openbim_ifcx",
+    "name": "openbim-ifcx"
+  },
+  {
+    "lib": "openbim_ifcx_geometry",
+    "name": "openbim-ifcx-geometry"
+  },
+  {
+    "lib": "openbim_ifcx_binding_core",
+    "name": "openbim-ifcx-binding-core"
+  },
+  {
+    "lib": "openbim_ifcx_py",
+    "name": "openbim-ifcx-py"
+  },
+  {
+    "lib": "openbim_ifcx_wasm",
+    "name": "openbim-ifcx-wasm"
+  }
+]
