@@ -9,6 +9,14 @@ repository.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-03
+
+### Fixed
+
+- The source distribution carries `LICENSE` at its root, where its metadata
+  names it. PyPI rejected the 0.1.0 sdist for the missing file, so 0.1.0 is
+  available as wheels only.
+
 ## [0.1.0] - 2026-10-03
 
 First version, for PyPI as `openbim-ifcx` (`publish = false` on crates.io).
@@ -28,5 +36,6 @@ First version, for PyPI as `openbim-ifcx` (`publish = false` on crates.io).
 - `scripts/check-python.sh` builds the wheel, installs it into a throwaway
   uv venv and runs the Python suite against it.
 
-[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-py-v0.1.0...HEAD
+[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-py-v0.1.1...HEAD
+[0.1.1]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-py-v0.1.1
 [0.1.0]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-py-v0.1.0

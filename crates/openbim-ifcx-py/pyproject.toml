@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "openbim-ifcx"
-version = "0.1.0"
+version = "0.1.1"
 description = "Read, write, validate, compose and export (GLB) IFC5 / IFCX files -- Python bindings for the openbim-ifcx Rust crate."
 readme = "README.md"
 license = { text = "MIT" }
@@ -24,3 +24,7 @@ Repository = "https://github.com/openbimrs/ifcx"
 # compiled extension, which lands at openbim_ifcx._native.
 python-source = "python"
 module-name = "openbim_ifcx._native"
+# maturin moves pyproject.toml to the sdist root but leaves LICENSE under
+# crates/openbim-ifcx-py/, while PKG-INFO names it at the root; PyPI rejects
+# such an sdist ("License-File LICENSE does not exist in distribution file").
+include = [{ path = "LICENSE", format = "sdist" }]
