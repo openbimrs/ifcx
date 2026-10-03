@@ -8,6 +8,15 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `scripts/upstream-parity.sh`: opt-in check that composes every example of a
+  local buildingSMART/IFC5-development checkout (`IFCX_UPSTREAM_DIR`), and
+  the crate's fixtures, with upstream's TypeScript (bundled from the checkout
+  at run time) and with the new `compose-json` example of `openbim-ifcx`, and
+  reports matches and differences per case. All 47 upstream examples at
+  `1a63082` compose equal to upstream (#17).
+- `openbim-ifcx` fixture `geometry-model.ifcx`: a small validated model with
+  a column type mesh and axis shared by two placed occurrences, a slab, and
+  USD transform, mesh, curve, and visibility attributes (#17).
 - `openbim-ifcx` flattens layered nodes by path in layer order
   (`flatten`, `FlatNode`), matching upstream `FlattenCompositionInput`;
   attribute values are shared through `Arc` (#13).

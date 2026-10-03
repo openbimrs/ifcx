@@ -14,6 +14,7 @@ executable evidence here.
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
 - `scripts/gate.sh` — complete local/CI verification gate
+- `scripts/upstream-parity.sh`, `scripts/parity/` — opt-in composition parity check against upstream's TypeScript; never vendors upstream code
 - `CHANGELOG.md` — user-visible changes using Keep a Changelog
 
 ## Commands
@@ -31,6 +32,8 @@ IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx-geome
 # also needs an offline mirror of the ifcx.dev files, laid out as <host>/<path>
 IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_MIRROR=../ifcx-mirror \
     cargo test --release -p openbim-ifcx --features fs --test upstream_layers -- --nocapture
+# composed trees vs upstream's TypeScript; needs Node.js >= 22 and npm (installs pinned esbuild)
+IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/upstream-parity.sh
 ```
 
 Trust command exit codes. Never summarize a Cargo pipeline in a way that hides

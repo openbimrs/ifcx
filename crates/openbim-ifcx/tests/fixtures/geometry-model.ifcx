@@ -1,0 +1,214 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/geometry-model",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03T12:00:00Z"
+  },
+  "imports": [],
+  "schemas": {
+    "usd::xformop": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "transform": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "min": 4,
+                "max": 4,
+                "value": {
+                  "dataType": "Array",
+                  "arrayRestrictions": {
+                    "min": 4,
+                    "max": 4,
+                    "value": {
+                      "dataType": "Real"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "usd::usdgeom::mesh": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "points": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Array",
+                  "arrayRestrictions": {
+                    "min": 3,
+                    "max": 3,
+                    "value": {
+                      "dataType": "Real",
+                      "quantityKind": "Length"
+                    }
+                  }
+                }
+              }
+            },
+            "faceVertexIndices": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "value": {
+                  "dataType": "Integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "usd::usdgeom::basiscurves": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "points": {
+              "dataType": "Array",
+              "arrayRestrictions": {
+                "min": 2,
+                "value": {
+                  "dataType": "Array",
+                  "arrayRestrictions": {
+                    "min": 3,
+                    "max": 3,
+                    "value": {
+                      "dataType": "Real",
+                      "quantityKind": "Length"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "usd::usdgeom::visibility": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "visibility": {
+              "dataType": "Enum",
+              "enumRestrictions": {
+                "options": [
+                  "inherited",
+                  "invisible"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "example::class": {
+      "value": {
+        "dataType": "String"
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "pavilion",
+      "children": {
+        "Storey": "storey"
+      },
+      "attributes": {
+        "example::class": "Site",
+        "usd::xformop": {
+          "transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 0, 1]]
+        }
+      }
+    },
+    {
+      "path": "storey",
+      "children": {
+        "Column 1": "column-1",
+        "Column 2": "column-2",
+        "Roof": "roof"
+      },
+      "attributes": {
+        "example::class": "Storey"
+      }
+    },
+    {
+      "path": "column-type",
+      "children": {
+        "Body": "column-type-body",
+        "Axis": "column-type-axis"
+      },
+      "attributes": {
+        "example::class": "ColumnType"
+      }
+    },
+    {
+      "path": "column-type-body",
+      "attributes": {
+        "usd::usdgeom::mesh": {
+          "points": [[0, 0, 0], [0.3, 0, 0], [0, 0.3, 0], [0.3, 0.3, 0], [0, 0, 3], [0.3, 0, 3], [0, 0.3, 3], [0.3, 0.3, 3]],
+          "faceVertexIndices": [0, 2, 1, 1, 2, 3, 4, 5, 6, 5, 7, 6, 0, 1, 4, 1, 5, 4, 2, 6, 3, 3, 6, 7, 0, 4, 2, 2, 4, 6, 1, 3, 5, 3, 7, 5]
+        }
+      }
+    },
+    {
+      "path": "column-type-axis",
+      "attributes": {
+        "usd::usdgeom::basiscurves": {
+          "points": [[0.15, 0.15, 0], [0.15, 0.15, 3]]
+        }
+      }
+    },
+    {
+      "path": "column-1",
+      "inherits": {
+        "Type": "column-type"
+      },
+      "attributes": {
+        "example::class": "Column",
+        "usd::xformop": {
+          "transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0.35, 0, 1]]
+        }
+      }
+    },
+    {
+      "path": "column-2",
+      "inherits": {
+        "Type": "column-type"
+      },
+      "attributes": {
+        "example::class": "Column",
+        "usd::xformop": {
+          "transform": [[0, 1, 0, 0], [-1, 0, -0.0, 0], [0, 0, 1, 0], [6, 0.35, 0, 1]]
+        }
+      }
+    },
+    {
+      "path": "column-2/Axis",
+      "attributes": {
+        "usd::usdgeom::visibility": {
+          "visibility": "invisible"
+        }
+      }
+    },
+    {
+      "path": "roof",
+      "attributes": {
+        "example::class": "Slab",
+        "usd::usdgeom::mesh": {
+          "points": [[0, 0, 3], [6, 0, 3], [0, 1, 3], [6, 1, 3], [0, 0, 3.2], [6, 0, 3.2], [0, 1, 3.2], [6, 1, 3.2]],
+          "faceVertexIndices": [0, 2, 1, 1, 2, 3, 4, 5, 6, 5, 7, 6, 0, 1, 4, 1, 5, 4, 2, 6, 3, 3, 6, 7, 0, 4, 2, 2, 4, 6, 1, 3, 5, 3, 7, 5]
+        }
+      }
+    }
+  ]
+}

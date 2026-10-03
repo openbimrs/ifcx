@@ -6,3 +6,4 @@
 .idea/
 .vscode/
 .hermes/
+/scripts/parity/node_modules/
