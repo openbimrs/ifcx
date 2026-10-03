@@ -8,7 +8,7 @@ implemented without executable evidence in this repository.
 
 - `openbim-ifcx/` — the planned model and composition crate (status only today)
 - `docs/capabilities.md` — authoritative capability table
-- `docs/adr/` — architecture decisions
+- `docs/adr/` — architecture decisions; 0002 fixes the crate split
 - `scripts/gate.sh` — complete local/CI verification gate
 - `CHANGELOG.md` — user-visible changes using Keep a Changelog
 

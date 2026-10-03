@@ -4,12 +4,15 @@ Status vocabulary: **reserved** (named, no behavior), **implemented** (code
 exists with tests), **conformance-tested** (checked against buildingSMART
 samples for a named draft revision).
 
-| Capability | Status | IFCX draft | Notes |
-| --- | --- | --- | --- |
-| Parse an IFCX JSON file | reserved | — | |
-| Compose layers into a resolved model | reserved | — | |
-| Write IFCX | reserved | — | |
-| IFC4 to IFCX bridge | reserved | — | Would depend on `openbim-ifc`; never the reverse |
+Target draft: `ifcx_alpha` (`schema/ifcx.tsp` in buildingSMART/IFC5-development).
+
+| Capability | Status | IFCX draft | Crate | Notes |
+| --- | --- | --- | --- | --- |
+| Read and write an IFCX file losslessly | reserved | — | `openbim-ifcx` | |
+| Compose layers into a resolved node tree | reserved | — | `openbim-ifcx` | |
+| Check attributes against the file's `schemas` | reserved | — | `openbim-ifcx` | |
+| Resolve imports | reserved | — | `openbim-ifcx` | Through a caller-supplied resolver; no built-in network access |
+| IFC4 to IFCX bridge | reserved | — | `openbim-ifcx-ifc4` (not created) | Would depend on `openbim-ifc`; never the reverse |
 
 ## Not here
 

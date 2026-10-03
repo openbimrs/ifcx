@@ -2,7 +2,7 @@
 name = "openbim-ifcx"
 version = "0.0.0"
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.88"
 license = "MIT"
 authors = ["point-grey"]
 repository = "https://github.com/openbimrs/ifcx"

@@ -25,7 +25,7 @@ authoritative list of what exists.
 ./scripts/gate.sh
 ```
 
-Rust 2021, MSRV 1.85, pure Rust, no `unsafe`.
+Rust 2021, MSRV 1.88, pure Rust, no `unsafe`.
 
 ## License
 
