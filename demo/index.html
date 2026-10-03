@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>IFCX viewer</title>
     <meta name="description" content="Compose an IFC5 / IFCX file in the browser with @openbim/ifcx, export GLB and view it with three.js." />
     <link rel="icon" href="data:," />
@@ -19,13 +19,13 @@
       <div class="controls">
         <label class="button" for="file">Open .ifcx…</label>
         <input id="file" type="file" accept=".ifcx,.json,application/json" multiple hidden />
-        <label>Sample
-          <select id="sample">
+        <label class="sample"><span class="label-text">Sample</span>
+          <select id="sample" aria-label="Sample">
             <option value="">choose…</option>
           </select>
         </label>
         <label title="Fetch the files that `imports` names over the network, relative to the file's URL. Off: imports are not resolved, unless you open the imported files together.">
-          <input id="fetch-imports" type="checkbox" /> fetch imports
+          <input id="fetch-imports" type="checkbox" /> <span>fetch imports</span>
         </label>
         <span id="status" role="status">Loading the WebAssembly module…</span>
       </div>
@@ -44,6 +44,10 @@
         <h2>Validation</h2>
         <div id="validation"><p class="hint">Nothing validated yet.</p></div>
       </aside>
+      <nav id="sheet-tabs" aria-label="Panels">
+        <button type="button" data-sheet="tree" aria-controls="tree-panel" aria-expanded="false">Nodes</button>
+        <button type="button" data-sheet="info" aria-controls="info-panel" aria-expanded="false">Details <span id="failure-badge" class="badge" hidden></span></button>
+      </nav>
     </main>
     <script type="module" src="./src/main.js"></script>
   </body>
