@@ -1,0 +1,29 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layer-base",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03T12:00:00Z"
+  },
+  "imports": [],
+  "schemas": {},
+  "data": [
+    {
+      "path": "site",
+      "children": { "Wall": "wall", "Slab": "slab" },
+      "attributes": { "example::name": "Site", "example::phase": "design" }
+    },
+    {
+      "path": "wall",
+      "children": { "Body": "wall-body", "Opening": "opening" },
+      "inherits": { "Type": "wall-type", "Style": "style-red" },
+      "attributes": { "example::height": 2.75, "example::fireRated": true }
+    },
+    {
+      "path": "wall",
+      "attributes": { "example::loadBearing": false }
+    },
+    { "path": "slab", "attributes": { "example::thickness": 0.25 } }
+  ]
+}

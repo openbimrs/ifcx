@@ -1,0 +1,22 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layer-edit",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.1",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-04T08:30:00Z"
+  },
+  "imports": [{ "uri": "openbimrs/ifcx/fixtures/layer-base" }],
+  "schemas": {},
+  "data": [
+    {
+      "path": "wall",
+      "children": { "Body": "wall-body-v2", "Opening": null },
+      "inherits": { "Style": null, "Finish": "finish-plaster" },
+      "attributes": { "example::height": 3.0, "example::fireRated": null }
+    },
+    { "path": "site", "children": { "Slab": null, "Roof": "roof" } },
+    { "path": "wall/Body", "attributes": { "example::colour": "grey" } },
+    { "path": "roof", "attributes": { "example::pitch": 30 } }
+  ]
+}
