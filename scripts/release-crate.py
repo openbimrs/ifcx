@@ -18,7 +18,8 @@ until they are dealt with.
 Usage:
     scripts/release-crate.py <crate>                   # current/published versions
     scripts/release-crate.py <crate> --set 0.2.1       # dry run: what would this cost?
-    scripts/release-crate.py <crate> --set 0.2.1 --apply  # bump manifest+changelog
+    scripts/release-crate.py <crate> --set 0.2.1 --apply  # bump manifests+changelog
+                                                       # (incl. the npm/PyPI manifest)
     scripts/release-crate.py <crate> --publish         # tag; CI publishes
     scripts/release-crate.py <crate> --publish --local # publish from here
     scripts/release-crate.py <tag> --plan              # registries for a tag
@@ -248,11 +249,12 @@ def apply_bump(crate: str, new: str) -> None:
 
 
 
-# Registries a crate's tag releases to, beyond crates.io, as
-# crate -> (registry, manifest path). None yet; openbimrs/ifc uses this for
-# its npm and PyPI bindings. The version in each manifest must equal the
-# crate's, so one tag names one release everywhere.
-EXTRA_REGISTRIES: dict[str, tuple[str, str]] = {}
+# Registries a crate's tag releases to, beyond crates.io. The version in each
+# manifest must equal the crate's, so one tag names one release everywhere.
+EXTRA_REGISTRIES = {
+    "openbim-ifcx-wasm": ("npm", "crates/openbim-ifcx-wasm/npm/package.json"),
+    "openbim-ifcx-py": ("pypi", "crates/openbim-ifcx-py/pyproject.toml"),
+}
 TAG = re.compile(r"^(?P<crate>[a-z0-9][a-z0-9-]*)-v(?P<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)$")
 
 

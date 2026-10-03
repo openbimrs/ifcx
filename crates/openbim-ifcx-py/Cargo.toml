@@ -1,0 +1,29 @@
+[package]
+name = "openbim-ifcx-py"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+authors = ["point-grey"]
+repository = "https://github.com/openbimrs/ifcx"
+homepage = "https://github.com/openbimrs/ifcx"
+description = "Python bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from Python."
+keywords = ["bim", "openbim", "ifcx", "ifc5", "python"]
+categories = ["api-bindings", "parser-implementations"]
+# Shipped as a wheel (maturin), not as a crate: publishing to crates.io would
+# offer a Python extension to Rust users who cannot use it.
+publish = false
+
+[lib]
+# The extension module Python imports as `openbim_ifcx._native`; `rlib` lets
+# the Rust tests link the binding code without an interpreter.
+name = "openbim_ifcx_py"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Bindings reach IFCX through the shared binding core only.
+openbim-ifcx-binding-core = { path = "../openbim-ifcx-binding-core", version = "0.1.0" }
+# abi3-py39: one wheel for CPython 3.9+. No `extension-module` feature: it is
+# deprecated in pyo3 0.29; maturin sets PYO3_BUILD_EXTENSION_MODULE instead,
+# and leaving it off keeps `cargo test --workspace` linkable.
+pyo3 = { version = "=0.29.2", features = ["abi3-py39"] }

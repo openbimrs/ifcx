@@ -8,15 +8,71 @@ permissions:
   contents: read
 
 jobs:
-  rust:
-    name: Rust 1.88 gate
+  # scripts/gate.sh split into its sections, one parallel job each. The
+  # sections are disjoint and together are the whole gate, so the union of
+  # these jobs is exactly `scripts/gate.sh` with no argument.
+  gate:
+    name: Gate (${{ matrix.section }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        section: [rust, bindings]
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Rust 1.88.0
         uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
         with:
+          toolchain: 1.88.0
           components: rustfmt, clippy
-      - name: Run verified gate
-        run: ./scripts/gate.sh
+          # The bindings section builds the JavaScript binding for wasm32.
+          targets: wasm32-unknown-unknown
+      - name: Cache Rust build
+        # One cache per section: they build different targets. Only main
+        # saves, so a branch or pull request can read the cache but never
+        # write into it.
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ matrix.section }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Set up Node
+        if: matrix.section == 'bindings'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+      - name: Install wasm-bindgen CLI
+        # Must equal the `wasm-bindgen` pin in crates/openbim-ifcx-wasm/Cargo.toml;
+        # build-node-pkg.sh refuses a mismatch.
+        if: matrix.section == 'bindings'
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: wasm-bindgen-cli@0.2.128
+      - name: Set up Python
+        if: matrix.section == 'bindings'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install uv and maturin
+        # The gate builds the Python wheel with maturin and tests it in a uv
+        # venv (crates/openbim-ifcx-py/scripts/check-python.sh).
+        if: matrix.section == 'bindings'
+        run: python -m pip install "uv==0.11.19" "maturin==1.13.3"
+      - name: Run gate section
+        run: ./scripts/gate.sh ${{ matrix.section }}
+
+  # The one check that means "the whole gate passed". The Release workflow
+  # requires this workflow's run on the commit it publishes to have
+  # succeeded.
+  verdict:
+    name: Standalone IFCX gate
+    needs: gate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every gate section to pass
+        env:
+          RESULT: ${{ needs.gate.result }}
+        run: |
+          [ "$RESULT" = success ] \
+            || { echo "::error::gate sections did not all pass: $RESULT"; exit 1; }

@@ -1,4 +1,6 @@
 [toolchain]
 channel = "1.88.0"
 components = ["clippy", "rustfmt"]
+# The gate builds and lints the JavaScript binding for wasm32.
+targets = ["wasm32-unknown-unknown"]
 profile = "minimal"

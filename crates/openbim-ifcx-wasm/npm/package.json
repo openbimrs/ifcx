@@ -1,0 +1,26 @@
+{
+  "name": "@openbim/ifcx",
+  "description": "Read, write, validate and compose IFC5 / IFCX files, and export GLB, from JavaScript (WebAssembly build of openbim-ifcx).",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openbimrs/ifcx.git",
+    "directory": "crates/openbim-ifcx-wasm"
+  },
+  "type": "commonjs",
+  "main": "openbim_ifcx_wasm.js",
+  "types": "openbim_ifcx_wasm.d.ts",
+  "files": [
+    "openbim_ifcx_wasm.js",
+    "openbim_ifcx_wasm.d.ts",
+    "openbim_ifcx_wasm_bg.wasm",
+    "openbim_ifcx_wasm_bg.wasm.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["ifcx", "ifc5", "ifc", "bim", "openbim", "gltf", "wasm"]
+}

@@ -11,10 +11,13 @@ implemented without executable evidence here.
 
 - `crates/openbim-ifcx/` — file model, JSON read/write, composition (`src/compose/`), attribute validation (`src/validate.rs`), layer stacks (`src/layers/`, features `integrity` and `fs`)
 - `crates/openbim-ifcx-geometry/` — per-node attribute decoders (transforms, meshes, curves, point clouds in `points.rs`, presentation in `presentation.rs`) the flat render scene (`scene.rs`), and GLB export (`glb.rs`, example `ifcx2glb`); depends on the core crate, never on a renderer
+- `crates/openbim-ifcx-binding-core/` — host-independent core of the bindings (`Document`, `LayerSet`, `BindingError` codes); JSON text to the hosts; `publish = false`
+- `crates/openbim-ifcx-wasm/` — JavaScript binding, npm `@openbim/ifcx` (`npm/package.json`, `scripts/build-node-pkg.sh`, `tests/js/`); `publish = false` on crates.io
+- `crates/openbim-ifcx-py/` — Python binding, PyPI `openbim-ifcx` (`pyproject.toml`, `python/openbim_ifcx/`, `scripts/check-python.sh`, `tests/python/`); `publish = false` on crates.io
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
-- `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases; see CONTRIBUTING.md
-- `scripts/gate.sh` — complete local/CI verification gate
+- `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases to crates.io, npm (`openbim-ifcx-wasm`), and PyPI (`openbim-ifcx-py`) by trusted publishing; see CONTRIBUTING.md
+- `scripts/gate.sh` — complete local/CI verification gate; sections `rust` and `bindings` (CI runs them as parallel jobs)
 - `scripts/upstream-parity.sh`, `scripts/parity/` — opt-in composition parity check against upstream's TypeScript; never vendors upstream code
 - `CHANGELOG.md` — repository-level changes; each crate keeps its own `CHANGELOG.md`
 
@@ -22,7 +25,10 @@ implemented without executable evidence here.
 
 ```bash
 ./scripts/gate.sh
+./scripts/gate.sh rust          # one section; `bindings` needs wasm-bindgen-cli 0.2.128, node, uv, maturin
 cargo test --workspace
+crates/openbim-ifcx-wasm/scripts/build-node-pkg.sh   # npm package + Node suite
+crates/openbim-ifcx-py/scripts/check-python.sh       # wheel + Python suite
 # opt-in, needs a local buildingSMART/IFC5-development checkout
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx --test upstream_round_trip
 # also needs the imported schema files from ifcx.dev, named by URI's last segment
@@ -56,6 +62,13 @@ the Cargo process status.
   redistribution rights. Record the IFCX draft revision a capability targets.
 - Release-critical package metadata and cross-repository dependency versions
   are explicit in crate manifests.
+- Bindings stay thin: IFCX behaviour goes into `openbim-ifcx` (or the
+  geometry crate) first, shared host glue into `openbim-ifcx-binding-core`;
+  the wasm and py crates only convert arguments and results. Error codes and
+  validation `kind` codes may be added, never renamed.
+- The npm and PyPI versions must equal the crate version;
+  `scripts/release-crate.py --set --apply` bumps both. Never publish by
+  hand except the first npm version (see CONTRIBUTING.md).
 
 ## Documentation discipline
 
