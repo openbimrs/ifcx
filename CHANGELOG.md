@@ -12,8 +12,12 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   verification gate, pinned CI, and Dependabot for action pins.
 - ADR 0001 recording that IFC5 / IFCX is its own family, not an IFC schema
   version.
+- ADR 0002 fixing the crate split: one core crate for file model and
+  composition, a separate crate for the IFC4 bridge.
+- Issue templates, labels, Discussions, and the IFCX project board.
 - Capability table stating that no IFCX behavior is implemented yet.
 
 ### Changed
 
 - License changed from AGPL-3.0 to MIT before any code or release.
+- MSRV is 1.88, matching `openbim-ifc` and `openbim-step`.
