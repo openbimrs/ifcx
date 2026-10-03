@@ -26,7 +26,10 @@
 //!   [`GltfMaterial`] keeps its factors, `alphaMode`, `alphaCutoff`, and
 //!   `doubleSided`. Texture references are not written, since the scene does
 //!   not load them. Factors and colours are clamped to `0..=1`, as glTF
-//!   requires.
+//!   requires, and `alphaCutoff` to a finite number of at least 0 (`0.5`
+//!   for NaN). With the scene's own finite coordinates (see
+//!   [`SceneWarningKind::OutOfRange`](crate::SceneWarningKind::OutOfRange)),
+//!   every number in the JSON chunk is finite, so it never holds `null`.
 //! - Every buffer view starts on a 4-byte boundary, and both chunks are
 //!   padded to 4 bytes, the JSON chunk with spaces.
 //!
@@ -433,7 +436,13 @@ fn pbr_material(pbr: &GltfMaterial) -> Value {
         AlphaMode::Blend => m["alphaMode"] = json!("BLEND"),
         AlphaMode::Mask => {
             m["alphaMode"] = json!("MASK");
-            m["alphaCutoff"] = num(pbr.alpha_cutoff.max(0.0));
+            // glTF wants a finite number >= 0; NaN means the default.
+            let cutoff = if pbr.alpha_cutoff.is_nan() {
+                0.5
+            } else {
+                pbr.alpha_cutoff.clamp(0.0, f32::MAX)
+            };
+            m["alphaCutoff"] = num(cutoff);
         }
     }
     if pbr.double_sided {
@@ -486,6 +495,25 @@ mod tests {
             json!([1.0, 0.0, 0.5, 0.25])
         );
         assert_eq!(m["alphaMode"], "BLEND");
+    }
+
+    /// Found by fuzzing (#41, target `scene_glb`): an infinite cutoff was
+    /// written as JSON `null`.
+    #[test]
+    fn alpha_cutoff_is_always_a_finite_number() {
+        for (cutoff, written) in [
+            (f32::INFINITY, f64::from(f32::MAX)),
+            (f32::NEG_INFINITY, 0.0),
+            (f32::NAN, 0.5),
+            (0.25, 0.25),
+        ] {
+            let m = pbr_material(&GltfMaterial {
+                alpha_mode: AlphaMode::Mask,
+                alpha_cutoff: cutoff,
+                ..GltfMaterial::default()
+            });
+            assert_eq!(m["alphaCutoff"].as_f64(), Some(written), "{cutoff}");
+        }
     }
 
     #[test]

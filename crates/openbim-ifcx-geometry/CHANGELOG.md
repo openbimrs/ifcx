@@ -23,6 +23,28 @@ repository.
   its test. The example and tests use API added to `openbim-ifcx` after
   0.1.0, so the `openbim-ifcx` requirement must move to that release when
   this crate is next released.
+- `SceneOptions::max_visits` (default 10 million) and
+  `SceneOptions::max_path_bytes` (default 1 GiB), with builders and
+  `DEFAULT_*` constants, bound the render-scene walk. When one is reached
+  the walk stops with a `SceneWarningKind::LimitReached` warning (#41).
+- `SceneWarningKind::OutOfRange` for geometry and instances whose
+  coordinates the scene's `f32` buffers and matrices cannot hold (#41).
+
+### Fixed
+
+- `RenderScene::from_composition` no longer visits an exponential number of
+  paths: composition shares sub-trees, so 40 nodes naming the next one twice
+  as children described 2^40 instances. Deep trees with long child names no
+  longer build instance paths without bound. Found while fuzzing (#41).
+- Coordinates beyond `f32` range (for example a translation of `5e299`)
+  no longer produce infinite render matrices, buffers, or origins, which
+  `to_glb` wrote as JSON `null`; such geometry and instances are left out
+  with an `OutOfRange` warning. `to_glb` writes an infinite `alphaCutoff` as
+  `f32::MAX` and a NaN one as `0.5`. Found by fuzzing (#41).
+- `PointCloud::from_pcd` returns `InvalidPcd` for ASCII data whose `COUNT`
+  values overflow `usize` when summed, instead of panicking with overflow
+  checks on (or reading the wrong column without). Found while fuzzing
+  (#41).
 
 ## [0.1.0] - 2026-10-03
 

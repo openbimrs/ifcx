@@ -1,0 +1,6 @@
+# libFuzzer instrumentation needs nightly. Pinned so local runs and CI
+# (.github/workflows/fuzz.yml) build with the same compiler; keep the two
+# dates equal when bumping.
+[toolchain]
+channel = "nightly-2026-09-25"
+profile = "minimal"

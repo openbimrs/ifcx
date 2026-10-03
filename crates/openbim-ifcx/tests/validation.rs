@@ -387,6 +387,77 @@ fn unknown_inherited_schema_and_cycles_are_reported() {
     );
 }
 
+/// Found while fuzzing (#41): every level of a diamond
+/// doubled the work, so 22 levels took seconds and reported millions of
+/// copies of one failure.
+#[test]
+fn diamond_inheritance_is_checked_once_per_schema() {
+    let mut map = serde_json::Map::new();
+    let levels = 40;
+    for i in 0..levels {
+        let next = [format!("t::{}a", i + 1), format!("t::{}b", i + 1)];
+        for side in ["a", "b"] {
+            map.insert(
+                format!("t::{i}{side}"),
+                json!({"value": {"dataType": "Real", "inherits": next}}),
+            );
+        }
+    }
+    for side in ["a", "b"] {
+        map.insert(
+            format!("t::{levels}{side}"),
+            json!({"value": {"dataType": "String"}}),
+        );
+    }
+    map.insert(
+        "t::a".into(),
+        json!({"value": {"dataType": "Real", "inherits": ["t::0a", "t::0b"]}}),
+    );
+    // Both bottom schemas want a string; each is reported once.
+    assert_eq!(
+        check_with(Value::Object(map), json!(1.5)),
+        vec![
+            (
+                String::new(),
+                FailureKind::TypeMismatch {
+                    expected: DataType::String,
+                    found: JsonType::Number
+                }
+            );
+            2
+        ]
+    );
+}
+
+/// Found while fuzzing (#41): inheritance was checked recursively, one frame
+/// per schema, so a long chain overflowed the stack.
+#[test]
+fn long_inheritance_chain_does_not_overflow_the_stack() {
+    let n = 200_000;
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "t::a".into(),
+        json!({"value": {"dataType": "Real", "inherits": ["t::0"]}}),
+    );
+    for i in 0..n {
+        map.insert(
+            format!("t::{i}"),
+            json!({"value": {"dataType": "Real", "inherits": [format!("t::{}", i + 1)]}}),
+        );
+    }
+    map.insert(
+        format!("t::{n}"),
+        json!({"value": {"dataType": "Real", "inherits": ["t::a"]}}),
+    );
+    assert_eq!(
+        check_with(Value::Object(map), json!(2)),
+        vec![(
+            String::new(),
+            FailureKind::InheritanceCycle { id: "t::a".into() }
+        )]
+    );
+}
+
 #[test]
 fn missing_schema_names_node_and_attribute() {
     let schemas = schemas(json!({}));

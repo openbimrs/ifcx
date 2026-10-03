@@ -440,17 +440,26 @@ fn numbers<'a>(
 
 fn read_pcd_ascii(header: &PcdHeader, body: &[u8]) -> Result<PointCloud, DecodeError> {
     let text = std::str::from_utf8(body).map_err(|_| invalid("ASCII data is not UTF-8"))?;
-    // Column of each field: earlier fields take COUNT columns each.
-    let column = |field: usize| header.count[..field].iter().sum::<usize>();
+    // Column of each field: earlier fields take COUNT columns each. A sum
+    // that overflows names a column no line can have.
+    let column = |field: usize| {
+        header.count[..field]
+            .iter()
+            .try_fold(0usize, |sum, &n| sum.checked_add(n))
+            .ok_or_else(|| invalid("COUNT values overflow"))
+    };
     // Coordinates go through f32, as the loader's Float32Array does, unless
     // the header declares them as 8-byte values.
-    let [x, y, z] = header.xyz()?.map(|f| {
+    let mut xyz = [(0, false); 3];
+    for (slot, f) in xyz.iter_mut().zip(header.xyz()?) {
         let double = header.size.as_ref().is_some_and(|size| size[f] == 8);
-        (column(f), double)
-    });
-    let rgb = header
-        .index("rgb")
-        .map(|i| (column(i), header.type_of(i) == Some("F")));
+        *slot = (column(f)?, double);
+    }
+    let [x, y, z] = xyz;
+    let rgb = match header.index("rgb") {
+        Some(i) => Some((column(i)?, header.type_of(i) == Some("F"))),
+        None => None,
+    };
 
     let mut positions = Vec::new();
     let mut colors = rgb.map(|_| Vec::new());
@@ -668,6 +677,17 @@ mod tests {
         ));
         assert!(decompress_lzf(&[0, b'a'], 2).is_err());
         assert!(decompress_lzf(&[0], 10_000).is_err());
+    }
+
+    /// Found while fuzzing (#41): the column of a field after one with a
+    /// huge `COUNT` overflowed `usize`, a panic with overflow checks on.
+    #[test]
+    fn ascii_count_overflow_is_an_error() {
+        let pcd = b"FIELDS a x y z\nCOUNT 18446744073709551615 1 1 1\nDATA ascii\n1 2 3 4\n";
+        assert_eq!(
+            PointCloud::from_pcd(pcd),
+            Err(invalid("COUNT values overflow"))
+        );
     }
 
     #[test]

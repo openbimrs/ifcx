@@ -88,6 +88,55 @@ gh workflow run upstream-drift.yml -R openbimrs/ifcx --ref main \
 default branch. `dry_run` only writes the run summary: no issue is opened,
 updated, or closed, and no state is recorded.
 
+## Fuzzing
+
+`fuzz/` holds [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) targets
+for the reader, composition, validation, and the geometry decoders. It is
+its own Cargo workspace with its own `Cargo.lock`, outside the root
+workspace and the MSRV gate, because libFuzzer needs a nightly toolchain;
+`fuzz/rust-toolchain.toml` pins the date.
+
+| Target | Exercises |
+| --- | --- |
+| `read` | `IfcxFile::from_json_slice` on arbitrary bytes; a file that reads must write and read back equal; then validate, flatten, and compose |
+| `compose` | `flatten` + `compose` over IFCX JSON or structured node lists with colliding paths, cycles, diamonds, and `head/child` edits |
+| `validate` | `IfcxFile::validate` with schemas that inherit each other (chains, diamonds, cycles) and nested restrictions |
+| `pcd` | `PointCloud::from_pcd` on arbitrary bytes (`ascii`, `binary`, `binary_compressed`), checked against `from_pcd_base64` |
+| `pcd_lzf` | the `binary_compressed` LZF decoder and column-major layout behind a fixed valid header |
+| `points_base64` | `points::base64` strings and `points::array` JSON |
+| `geometry` | mesh, curve, transform, presentation, and point-array decoders on one JSON value |
+| `scene_glb` | `RenderScene` and `to_glb` on composed files; checks the GLB structure, alignment, index ranges, and that the JSON holds no `null` |
+
+Install cargo-fuzz once (`cargo install cargo-fuzz`), then run a target for
+a bounded time:
+
+```bash
+fuzz/run.sh --list              # target names
+fuzz/run.sh pcd 600             # ten minutes
+fuzz/run.sh compose 60 -jobs=4  # extra libFuzzer flags after the seconds
+```
+
+`fuzz/run.sh` builds with the pinned nightly, debug assertions (so integer
+overflow panics), and ASan; reads seeds from `fuzz/seeds/<target>` and, for
+targets taking IFCX files, from the hand-written fixtures in
+`crates/*/tests/fixtures`; writes new inputs to `fuzz/corpus/<target>`; and
+limits memory to 2 GiB and each input to 10 s, so unbounded allocation and
+super-linear blow-ups are findings too. Plain
+`cargo +nightly-2026-09-25 fuzz run <target>` works as well.
+
+A crash leaves its input in `fuzz/artifacts/<target>/`. Fix it in the
+library crate with a regression test in that crate's normal test suite
+(never only in `fuzz/`), and add the minimized input
+(`cargo fuzz tmin <target> <file>`) to `fuzz/seeds/<target>/` when it is a
+useful seed. Seeds must be original work: never add buildingSMART samples.
+
+CI runs every target in `.github/workflows/fuzz.yml`: one minute each on
+pull requests that touch the fuzzed crates or `fuzz/`, ten minutes each
+every Monday (keeping the corpus between weekly runs), and on demand with
+`gh workflow run fuzz.yml -R openbimrs/ifcx -f seconds=1800`. That workflow
+is not part of the required gate. When bumping the nightly date, change
+`fuzz/rust-toolchain.toml` and the workflow together.
+
 ## Releasing a crate
 
 Every crate is versioned and released on its own; releasing one does not

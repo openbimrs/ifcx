@@ -1,0 +1,84 @@
+name: Fuzz
+
+# cargo-fuzz targets in fuzz/ (see CONTRIBUTING.md, "Fuzzing"). They need a
+# nightly toolchain, so this workflow is separate from CI and never part of
+# the required "Standalone IFCX gate": a finding fails this workflow only.
+#
+# - pull requests touching the fuzzed code: a one-minute smoke run per target;
+# - weekly: ten minutes per target, continuing from the last weekly corpus;
+# - manually: any duration.
+
+on:
+  pull_request:
+    paths:
+      - "crates/openbim-ifcx/src/**"
+      - "crates/openbim-ifcx-geometry/src/**"
+      - "fuzz/**"
+      - ".github/workflows/fuzz.yml"
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds per target
+        default: "600"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzz (${{ matrix.target }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Must list every target of fuzz/run.sh --list.
+        target: [read, compose, validate, pcd, pcd_lzf, points_base64, geometry, scene_glb]
+    env:
+      SECONDS_PER_TARGET: ${{ github.event_name == 'pull_request' && '60' || inputs.seconds || '600' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install pinned nightly
+        # Must equal the channel in fuzz/rust-toolchain.toml.
+        uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
+        with:
+          toolchain: nightly-2026-09-25
+      - name: Install cargo-fuzz
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-fuzz@0.13.2
+      - name: Cache fuzz build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: fuzz -> target
+          key: ${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Restore corpus
+        # Only the scheduled run saves, so the corpus grows week by week.
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
+      - name: Run ${{ matrix.target }}
+        run: fuzz/run.sh "${{ matrix.target }}" "$SECONDS_PER_TARGET"
+      - name: Save corpus
+        if: always() && github.event_name == 'schedule'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+      - name: Upload crashing input
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore

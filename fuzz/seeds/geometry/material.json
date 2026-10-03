@@ -1,0 +1,1 @@
+{"pbrMetallicRoughness": {"baseColorFactor": [0.8, 0.2, 0.2, 0.5], "metallicFactor": 0.1, "roughnessFactor": 0.7}, "emissiveFactor": [0, 0, 1], "alphaMode": "MASK", "alphaCutoff": 0.3, "doubleSided": true, "normalTexture": {"texture": "n.png", "scale": 2}}

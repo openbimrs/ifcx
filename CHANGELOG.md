@@ -37,6 +37,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   branches moved since the last run, and opens or updates a single
   `upstream-drift` issue on failure or difference. Not part of the CI gate
   (#35).
+- Fuzzing (#41): `fuzz/` holds cargo-fuzz targets `read`, `compose`,
+  `validate`, `pcd`, `pcd_lzf`, `points_base64`, `geometry`, and
+  `scene_glb`, in their own workspace with a pinned nightly, outside the MSRV
+  gate. `fuzz/run.sh` runs one with seeds from `fuzz/seeds/` and the
+  hand-written fixtures, debug assertions, and memory and time limits.
+  `.github/workflows/fuzz.yml` runs every target for one minute on pull
+  requests touching the fuzzed crates and for ten minutes weekly, keeping
+  the corpus; it is not part of the required gate. CONTRIBUTING.md documents
+  it.
+
 - Language bindings: `openbim-ifcx-wasm` (npm `@openbim/ifcx`) and
   `openbim-ifcx-py` (PyPI `openbim-ifcx`) over a shared
   `openbim-ifcx-binding-core`, as in `openbimrs/ifc`.
