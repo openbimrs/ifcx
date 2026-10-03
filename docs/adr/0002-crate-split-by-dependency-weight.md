@@ -35,8 +35,14 @@ dependencies, which a plain IFCX reader should not pay for.
   crate performs no network or filesystem access of its own.
 - `openbim-ifcx-ifc4` holds the IFC4 to IFCX bridge and is the only crate
   that depends on `openbim-ifc`. It is created once the core model is stable.
-- Interpretation of `usd::usdgeom::*` and other domain attributes stays out of
-  the core crate until a consumer needs it.
+- `openbim-ifcx-geometry` turns a composed node tree into a renderer-neutral
+  scene for viewers: world transforms from `usd::xformop::transform`, meshes
+  from `usd::usdgeom::mesh`, polylines from `usd::usdgeom::basiscurves`,
+  point clouds from `points::*` and `pcd::base64`, and presentation from
+  `usd::usdgeom::visibility`, `bsi::ifc::presentation::*`, and material
+  bindings. It also writes the scene as GLB, so any glTF viewer can show an
+  IFCX file. It depends on the core crate and never on a renderer, GPU API,
+  or `openbim-ifc`. The core crate stays free of geometry.
 
 Every capability names the draft revision it targets.
 
@@ -46,11 +52,13 @@ Every capability names the draft revision it targets.
 | --- | --- |
 | Separate parse, compose, and schema crates now | Each draft bump would need coordinated releases of crates that always change together |
 | Bridge inside the core crate behind a feature | Feature unification would let one consumer's bridge pull `openbim-ifc` into another's build |
+| Geometry inside the core crate | Every reader, including validators and data tools, would compile mesh, decoding, and glTF code |
 | HTTP import fetching in the core crate | Forces a network stack on every consumer, including WASM and offline tools |
 
 ## Consequences
 
-- A plain IFCX reader compiles serde plus one crate.
+- A plain IFCX reader compiles serde plus one crate. A viewer adds
+  `openbim-ifcx-geometry`.
 - Splitting composition out later stays possible if it gains a heavy
   dependency or a second consumer.
 - The upstream repository publishes no license, so its examples are not

@@ -14,6 +14,8 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   version.
 - ADR 0002 fixing the crate split: one core crate for file model and
   composition, a separate crate for the IFC4 bridge.
+- `openbim-ifcx-geometry` scaffold for renderer-neutral geometry, viewer
+  helpers, and GLB export.
 - Issue templates, labels, Discussions, and the IFCX project board.
 - Capability table stating that no IFCX behavior is implemented yet.
 

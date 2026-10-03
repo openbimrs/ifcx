@@ -18,6 +18,7 @@ authoritative list of what exists.
 | Crate | Role | Published |
 | --- | --- | --- |
 | `openbim-ifcx` | IFCX model and composition (planned) | no |
+| `openbim-ifcx-geometry` | Geometry and viewer helpers, GLB export (planned) | no |
 
 ## Development
 

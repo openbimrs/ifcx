@@ -1,0 +1,19 @@
+[package]
+name = "openbim-ifcx-geometry"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+authors = ["point-grey"]
+repository = "https://github.com/openbimrs/ifcx"
+homepage = "https://github.com/openbimrs/ifcx"
+documentation = "https://docs.rs/openbim-ifcx-geometry"
+readme = "README.md"
+description = "Renderer-neutral geometry and viewer helpers for IFCX. Scaffold only; nothing is extracted yet."
+keywords = ["bim", "openbim", "ifcx", "geometry", "gltf"]
+categories = ["graphics", "rendering::data-formats"]
+# Not published until extraction exists; see docs/capabilities.md.
+publish = false
+
+[dependencies]
+openbim-ifcx = { path = "../openbim-ifcx", version = "0.0.0" }

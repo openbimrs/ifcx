@@ -53,6 +53,7 @@ body:
         - composition
         - schemas
         - imports
+        - geometry
         - ifc4 bridge
         - integration
         - architecture

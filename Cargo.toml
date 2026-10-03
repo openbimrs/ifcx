@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["openbim-ifcx"]
+members = ["openbim-ifcx", "openbim-ifcx-geometry"]
 
 [profile.release]
 opt-level = 3
