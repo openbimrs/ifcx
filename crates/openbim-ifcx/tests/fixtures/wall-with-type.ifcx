@@ -1,0 +1,107 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/wall-with-type",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03T12:00:00Z"
+  },
+  "imports": [
+    { "uri": "https://example.org/ifcx/base-schemas.ifcx" },
+    { "uri": "file:./materials.ifcx", "integrity": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }
+  ],
+  "schemas": {
+    "example::wall::height": {
+      "uri": "https://example.org/ifcx/wall#height",
+      "value": { "dataType": "Real", "quantityKind": "Length" }
+    },
+    "example::wall::fireRated": {
+      "value": { "dataType": "Boolean", "optional": true }
+    },
+    "example::wall::layers": {
+      "value": { "dataType": "Integer" }
+    },
+    "example::wall::name": {
+      "value": { "dataType": "String" }
+    },
+    "example::wall::installed": {
+      "value": { "dataType": "DateTime" }
+    },
+    "example::wall::kind": {
+      "value": { "dataType": "Enum", "enumRestrictions": { "options": ["STANDARD", "PARTITIONING"] } }
+    },
+    "example::wall::host": {
+      "value": { "dataType": "Reference" }
+    },
+    "example::wall::thumbnail": {
+      "value": { "dataType": "Blob" }
+    },
+    "example::wall::profile": {
+      "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+          "min": 2,
+          "max": 64,
+          "value": {
+            "dataType": "Array",
+            "arrayRestrictions": { "min": 2, "max": 2, "value": { "dataType": "Real" } }
+          }
+        }
+      }
+    },
+    "example::wall::colour": {
+      "value": {
+        "dataType": "Object",
+        "inherits": ["example::wall::base"],
+        "objectRestrictions": {
+          "values": {
+            "r": { "dataType": "Real" },
+            "g": { "dataType": "Real" },
+            "b": { "dataType": "Real", "optional": false }
+          }
+        }
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "f3a1c2d4-0000-4000-8000-000000000001",
+      "children": { "Wall": "f3a1c2d4-0000-4000-8000-000000000002" }
+    },
+    {
+      "path": "f3a1c2d4-0000-4000-8000-000000000002",
+      "inherits": { "WallType": "f3a1c2d4-0000-4000-8000-000000000003" },
+      "attributes": {
+        "example::wall::height": 2.75,
+        "example::wall::fireRated": true,
+        "example::wall::layers": 3,
+        "example::wall::name": "Wall 001",
+        "example::wall::installed": "2026-10-03T12:00:00Z",
+        "example::wall::kind": "STANDARD",
+        "example::wall::host": "f3a1c2d4-0000-4000-8000-000000000001",
+        "example::wall::thumbnail": "iVBORw0KGgo=",
+        "example::wall::profile": [[0.0, 0.0], [5.0, 0.0], [5.0, 0.2], [0.0, 0.2]],
+        "example::wall::colour": { "r": 0.8, "g": 0.75, "b": 0.7 },
+        "usd::xformop::transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [1.5, 0, 0, 1]]
+      }
+    },
+    {
+      "path": "f3a1c2d4-0000-4000-8000-000000000003",
+      "children": { "Body": "f3a1c2d4-0000-4000-8000-000000000004" },
+      "attributes": { "example::wall::kind": "STANDARD" }
+    },
+    {
+      "path": "f3a1c2d4-0000-4000-8000-000000000004",
+      "attributes": {
+        "usd::usdgeom::mesh": {
+          "points": [[0, 0, 0], [5, 0, 0], [5, 0.2, 0], [0, 0.2, 0]],
+          "faceVertexIndices": [0, 1, 2, 0, 2, 3]
+        }
+      }
+    },
+    {
+      "path": "f3a1c2d4-0000-4000-8000-000000000002",
+      "attributes": { "example::wall::height": 3.0 }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/unknown-fields",
+    "ifcxVersion": "ifcx_beta",
+    "dataVersion": "2.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03",
+    "license": "MIT",
+    "tool": { "name": "hand-written", "version": 1 }
+  },
+  "imports": [{ "uri": "file:./other.ifcx", "optional": true }],
+  "schemas": {
+    "example::future": {
+      "status": "draft",
+      "value": {
+        "dataType": "Quaternion",
+        "precision": 1e-12,
+        "arrayRestrictions": {
+          "min": 4,
+          "max": 4,
+          "stride": 1,
+          "value": { "dataType": "Real", "unit": "1" }
+        },
+        "enumRestrictions": { "options": [], "openEnded": true },
+        "objectRestrictions": { "values": {}, "additional": false }
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "f3a1c2d4-0000-4000-8000-0000000000aa",
+      "comment": "nodes in upstream samples carry fields the schema does not define",
+      "linearreference": { "station": 1234.5678901234567 },
+      "attributes": {
+        "example::future": [0.7071067811865476, 0, 0, 0.7071067811865475],
+        "example::big": 9007199254740993,
+        "example::nested": { "z": 1, "a": [null, true, "x"] }
+      }
+    }
+  ],
+  "signature": { "alg": "none" }
+}

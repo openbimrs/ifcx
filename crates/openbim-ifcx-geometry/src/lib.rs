@@ -24,6 +24,7 @@ mod tests {
 
     #[test]
     fn builds_on_the_core_crate() {
-        assert!(openbim_ifcx::PACKAGE_STATUS.starts_with("SCAFFOLD: "));
+        let _: fn(&str) -> Result<openbim_ifcx::IfcxFile, _> =
+            openbim_ifcx::IfcxFile::from_json_str;
     }
 }

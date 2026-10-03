@@ -9,10 +9,14 @@ repository = "https://github.com/openbimrs/ifcx"
 homepage = "https://github.com/openbimrs/ifcx"
 documentation = "https://docs.rs/openbim-ifcx"
 readme = "README.md"
-description = "OpenBIM.rs family for IFC5 / IFCX, the layered JSON model. Scaffold only; no reader yet."
+description = "Lossless reader and writer for IFC5 / IFCX files, the layered JSON model."
 keywords = ["bim", "openbim", "ifc", "ifc5", "ifcx"]
 categories = ["parser-implementations"]
-# Not published until a reader exists; see docs/capabilities.md.
+# Not published until composition exists; see docs/capabilities.md.
 publish = false
 
 [dependencies]
+indexmap = { version = "2", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+# preserve_order keeps key order on round trip; float_roundtrip keeps every f64 exact.
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }

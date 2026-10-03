@@ -28,8 +28,8 @@ dependencies, which a plain IFCX reader should not pay for.
 
 - `openbim-ifcx` holds the file model, lossless JSON read/write, layer
   composition into a resolved node tree, and checking attributes against the
-  file's own `schemas`, as modules of one crate. It depends on serde and
-  serde_json only.
+  file's own `schemas`, as modules of one crate. It depends on serde,
+  serde_json, and indexmap (already required by serde_json's `preserve_order`).
 - The reader preserves unknown fields so files from newer drafts round-trip.
 - Imports are resolved through a caller-supplied resolver trait. The core
   crate performs no network or filesystem access of its own.
