@@ -231,6 +231,10 @@ def apply_bump(crate: str, new: str) -> None:
                 dm.write_text(nt, encoding="utf-8")
                 print(f"  updated requirement in {dep}")
 
+    # CI builds with --locked, so the lock file must carry the new version.
+    subprocess.run(["cargo", "update", "--workspace", "--quiet"],
+        cwd=ROOT, check=True)
+
     changelog = crate_dir(crate) / "CHANGELOG.md"
     ct = changelog.read_text(encoding="utf-8")
     anchor = "## [Unreleased]\n"
