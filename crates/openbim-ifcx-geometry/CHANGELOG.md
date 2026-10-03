@@ -9,6 +9,10 @@ repository.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-03
+
+No breaking change. Requires `openbim-ifcx` 0.1.1.
+
 ### Added
 
 - `ifcx2glb --resolve-imports` loads every layer's `imports` through
@@ -20,9 +24,7 @@ repository.
   its import defines, and `tests/imports.rs`, which exports it with the
   import resolved (#42).
 - Dev-dependency on `openbim-ifcx` with feature `fs`, for the example and
-  its test. The example and tests use API added to `openbim-ifcx` after
-  0.1.0, so the `openbim-ifcx` requirement must move to that release when
-  this crate is next released.
+  its test.
 - `SceneOptions::max_visits` (default 10 million) and
   `SceneOptions::max_path_bytes` (default 1 GiB), with builders and
   `DEFAULT_*` constants, bound the render-scene walk. When one is reached

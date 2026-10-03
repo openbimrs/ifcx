@@ -1,6 +1,6 @@
 [package]
 name = "openbim-ifcx-geometry"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"
@@ -14,7 +14,7 @@ keywords = ["bim", "openbim", "ifcx", "geometry", "gltf"]
 categories = ["graphics", "rendering::data-formats"]
 
 [dependencies]
-openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.0" }
+openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.1" }
 # Decodes `points::base64` and `pcd::base64`. Without default features: no
 # std and none of its SIMD (unsafe) engines, only the scalar decoder.
 base64 = { version = "0.23", default-features = false, features = ["alloc"] }
@@ -26,4 +26,4 @@ serde_json = "1"
 
 [dev-dependencies]
 # `FsResolver` (feature `fs`) for `ifcx2glb --resolve-imports` and its test.
-openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.0", features = ["fs"] }
+openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.1", features = ["fs"] }

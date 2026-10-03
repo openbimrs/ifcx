@@ -9,6 +9,8 @@ repository.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-03
+
 No breaking change: every addition below is new API, and existing
 functions and types keep their signatures.
 
@@ -94,5 +96,6 @@ composition, import resolution, and schema validation for `ifcx_alpha`.
   `Blob` values are accepted unchecked and `quantityKind` is not checked
   (#16).
 
-[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-v0.1.0...HEAD
+[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-v0.1.1...HEAD
+[0.1.1]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-v0.1.1
 [0.1.0]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-v0.1.0

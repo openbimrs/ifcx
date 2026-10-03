@@ -50,7 +50,19 @@ gate_rust() {
     fi
     # Every publishable crate must package and build from its .crate alone.
     cargo package --locked -p openbim-ifcx
-    cargo package --locked -p openbim-ifcx-geometry
+    # Cargo 1.88 resolves a packaged crate's dependencies from crates.io
+    # only, so geometry cannot be packaged while it requires an
+    # openbim-ifcx version that is not released yet (the window between a
+    # version bump and the openbim-ifcx release). Release openbim-ifcx
+    # first; `cargo publish` in the release job then verifies geometry.
+    local core
+    core=$(cargo metadata --no-deps --format-version 1 \
+        | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"]=="openbim-ifcx"))')
+    if curl -fsS --max-time 30 https://index.crates.io/op/en/openbim-ifcx | grep -q "\"vers\":\"$core\""; then
+        cargo package --locked -p openbim-ifcx-geometry
+    else
+        echo "warning: openbim-ifcx $core is not on crates.io yet; skipping cargo package of openbim-ifcx-geometry (release openbim-ifcx first)" >&2
+    fi
 }
 
 gate_bindings() {

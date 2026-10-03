@@ -9,7 +9,15 @@ repository.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-03
+
 ### Changed
+
+- Built on `openbim-ifcx` 0.1.1 and `openbim-ifcx-geometry` 0.1.1:
+  validation with imports checks every layer against the schemas of all
+  layers, flattening and composition no longer copy attribute values, and
+  the fuzzing fixes apply (deep schema inheritance, oversized coordinates,
+  exponential scene walks, malformed PCD headers).
 
 - The README, which is the npm page, links the documentation site
   (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
@@ -64,6 +72,7 @@ First version, for npm as `@openbim/ifcx` (`publish = false` on crates.io).
 - `scripts/build-node-pkg.sh` builds the package with the pinned
   `wasm-bindgen` CLI and runs the Node suite against it.
 
-[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-wasm-v0.2.0...HEAD
+[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-wasm-v0.2.1...HEAD
+[0.2.1]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-wasm-v0.2.1
 [0.2.0]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-wasm-v0.2.0
 [0.1.0]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-wasm-v0.1.0

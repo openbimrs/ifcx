@@ -38,11 +38,11 @@ The crates, generated from their manifests and changelogs:
 
 | Crate | Description | Distributed as | Latest release |
 | --- | --- | --- | --- |
-| [`openbim-ifcx`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx) | Lossless reader and writer for IFC5 / IFCX files, the layered JSON model. | [crates.io `openbim-ifcx`](https://crates.io/crates/openbim-ifcx) | 0.1.0 (2026-10-03) |
-| [`openbim-ifcx-geometry`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-geometry) | Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: transforms, meshes, curves, point clouds, presentation, a flat render scene, and GLB export. | [crates.io `openbim-ifcx-geometry`](https://crates.io/crates/openbim-ifcx-geometry) | 0.1.0 (2026-10-03) |
+| [`openbim-ifcx`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx) | Lossless reader and writer for IFC5 / IFCX files, the layered JSON model. | [crates.io `openbim-ifcx`](https://crates.io/crates/openbim-ifcx) | 0.1.1 (2026-10-03) |
+| [`openbim-ifcx-geometry`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-geometry) | Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: transforms, meshes, curves, point clouds, presentation, a flat render scene, and GLB export. | [crates.io `openbim-ifcx-geometry`](https://crates.io/crates/openbim-ifcx-geometry) | 0.1.1 (2026-10-03) |
 | [`openbim-ifcx-binding-core`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-binding-core) | Host-independent core shared by the openbim-ifcx language bindings (WebAssembly, Python). | not published on its own (`publish = false`); ships inside the bindings | not released |
-| [`openbim-ifcx-py`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-py) | Python bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from Python. | [PyPI `openbim-ifcx`](https://pypi.org/project/openbim-ifcx/) | 0.1.1 (2026-10-03) |
-| [`openbim-ifcx-wasm`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-wasm) | WebAssembly bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from JavaScript. | [npm `@openbim/ifcx`](https://www.npmjs.com/package/@openbim/ifcx) | 0.2.0 (2026-10-03) |
+| [`openbim-ifcx-py`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-py) | Python bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from Python. | [PyPI `openbim-ifcx`](https://pypi.org/project/openbim-ifcx/) | 0.1.2 (2026-10-03) |
+| [`openbim-ifcx-wasm`](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-wasm) | WebAssembly bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from JavaScript. | [npm `@openbim/ifcx`](https://www.npmjs.com/package/@openbim/ifcx) | 0.2.1 (2026-10-03) |
 
 <!-- CRATES:TABLE:END -->
 

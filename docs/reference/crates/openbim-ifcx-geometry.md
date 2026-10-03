@@ -8,9 +8,9 @@ editLink: false
 
 Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: transforms, meshes, curves, point clouds, presentation, a flat render scene, and GLB export.
 
-| Crate | `openbim-ifcx-geometry` 0.1.0 on `main` |
+| Crate | `openbim-ifcx-geometry` 0.1.1 on `main` |
 | --- | --- |
-| Latest release | 0.1.0 (2026-10-03) |
+| Latest release | 0.1.1 (2026-10-03) |
 | Distributed as | [crates.io `openbim-ifcx-geometry`](https://crates.io/crates/openbim-ifcx-geometry) |
 | Install | `cargo add openbim-ifcx-geometry` |
 | Requires | Rust `1.88.0` |
@@ -150,7 +150,9 @@ The crate root, as rustdoc shows it. Follow a name to its rustdoc entry.
 
 ## Changes
 
-Unreleased, on `main`:
+Latest release, 0.1.1 (2026-10-03):
+
+No breaking change. Requires `openbim-ifcx` 0.1.1.
 
 #### Added
 
@@ -163,9 +165,7 @@ Unreleased, on `main`:
   its import defines, and `tests/imports.rs`, which exports it with the
   import resolved (#42).
 - Dev-dependency on `openbim-ifcx` with feature `fs`, for the example and
-  its test. The example and tests use API added to `openbim-ifcx` after
-  0.1.0, so the `openbim-ifcx` requirement must move to that release when
-  this crate is next released.
+  its test.
 - `SceneOptions::max_visits` (default 10 million) and
   `SceneOptions::max_path_bytes` (default 1 GiB), with builders and
   `DEFAULT_*` constants, bound the render-scene walk. When one is reached
@@ -188,57 +188,5 @@ Unreleased, on `main`:
   values overflow `usize` when summed, instead of panicking with overflow
   checks on (or reading the wrong column without). Found while fuzzing
   (#41).
-
-Latest release, 0.1.0 (2026-10-03):
-
-First release: decoders for `ifcx_alpha` transforms, meshes, curves, point
-clouds and presentation; a flat render scene over a composed tree; and GLB
-export.
-
-#### Added
-
-- `openbim-ifcx-geometry` writes a `RenderScene` as binary glTF 2.0
-  (`to_glb`, `GlbOptions`, `GlbError`): shared meshes per buffer and
-  material, `TRIANGLES`, `LINES`, and `POINTS` with `COLOR_0`, PBR
-  materials, node names set to IFCX paths, and a root node with the scene
-  origin and the Z-up to Y-up rotation. The `ifcx2glb` example converts IFCX
-  layers to `.glb`; the opt-in `scripts/gltf-validate.sh` checks exports with
-  the Khronos glTF validator (#9).
-- `openbim-ifcx-geometry` builds a flat render scene from a composition
-  (`RenderScene::from_composition`, `from_root`): instances with node path,
-  world transform, `f32` render matrix, material, and bounds; shared `f32`
-  mesh (with vertex normals), line, and point buffers decoded once per shared
-  attribute value and instanced; a material table; `f64` world bounds; and a
-  render origin (`SceneOptions`, `Origin`) that keeps georeferenced models
-  precise. Invisible subtrees are left out, materials resolve through
-  ancestors, and malformed values become `SceneWarning`s. This completes
-  world transforms through the hierarchy (#3) and presentation resolution
-  (#7) (#8).
-- `openbim-ifcx-geometry` decodes `ifcx_alpha` geometry attributes:
-  `usd::xformop` into an affine `Transform` (USD row-vector layout, `f64`)
-  with `world_from_parent` for hierarchy composition (#3, tree walk pending);
-  `usd::usdgeom::mesh` into a `TriangleMesh` with face normals (#4); and
-  `usd::usdgeom::basiscurves` into polylines, with non-linear curve types
-  reported as unsupported (#5). Malformed values return a typed
-  `DecodeError`.
-- `openbim-ifcx-geometry` decodes point clouds per node from
-  `points::array`, `points::base64`, and `pcd::base64` (PCD `ascii`,
-  `binary`, `binary_compressed`) into `PointCloud` with `f64` positions and
-  optional linear RGB colours. Malformed base64 or PCD returns
-  `DecodeError::InvalidBase64`, `ByteLength`, or `InvalidPcd`; PCD layouts
-  upstream cannot read either return `UnsupportedPcd` (#6).
-- `openbim-ifcx-geometry` decodes visibility, `diffuseColor`, `opacity`, and
-  `gltf::material` per node (`NodePresentation`) and resolves visibility and
-  materials over a node's ancestors with the reference viewer's precedence
-  (`is_visible`, `resolve_basic_material`, `resolve_mesh_material`) (#7).
-- `openbim-ifcx-geometry` `Attributes` trait reads attributes from an
-  `IfcxNode`, `FlatNode`, `ComposedNode`, or a plain map, treating `null` as
-  absent.
-- `openbim-ifcx-geometry` scaffold for renderer-neutral geometry, viewer
-  helpers, and GLB export.
-
-#### Removed
-
-- `openbim_ifcx_geometry::PACKAGE_STATUS`, replaced by the decoders.
 
 Full history: [`crates/openbim-ifcx-geometry/CHANGELOG.md`](https://github.com/openbimrs/ifcx/blob/main/crates/openbim-ifcx-geometry/CHANGELOG.md), and every release of every crate on the [project changelog](/project/changelog).

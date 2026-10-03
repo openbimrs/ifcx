@@ -107,7 +107,139 @@ latest release notes.
   cannot export instead of exiting silently. Found by the first upstream
   drift run (#56).
 
-### `openbim-ifcx`
+### `openbim-ifcx-binding-core`
+
+Not released on its own (`publish = false`): it ships inside the npm and
+PyPI packages, whose changelogs name the releases.
+
+#### Changed
+
+- `LayerSet` with imports stacks its layers with
+  `LayerStackBuilder::build_all` instead of building its own synthetic main
+  layer; the order and the reports are unchanged. Federation and
+  composition move the parsed layers instead of copying them
+  (`federate_owned`, `LayerStack::into_federated`, `flatten_owned`) (#42,
+  #43).
+
+#### Added
+
+- The host-independent half of the language bindings: `Document` (read,
+  lossless write, header, validation against the file's own schemas),
+  `LayerSet` (layers weakest first, optional in-memory imports under a
+  synthetic main layer, composition into a `{path, attributes, children}`
+  tree, federated validation, GLB export through `openbim-ifcx-geometry`), validation reports with stable failure
+  `kind` codes, and `BindingError` with the stable codes `read`, `write`,
+  `layer`, `compose`, `invalid-argument` and `glb`.
+
+## Releases
+
+### `openbim-ifcx-wasm` 0.2.1 (2026-10-03)
+
+#### Changed
+
+- Built on `openbim-ifcx` 0.1.1 and `openbim-ifcx-geometry` 0.1.1:
+  validation with imports checks every layer against the schemas of all
+  layers, flattening and composition no longer copy attribute values, and
+  the fuzzing fixes apply (deep schema inheritance, oversized coordinates,
+  exponential scene walks, malformed PCD headers).
+
+- The README, which is the npm page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
+
+### `openbim-ifcx-wasm` 0.2.0 (2026-10-03)
+
+#### Added
+
+- Browser builds in the same npm package (#46): next to the Node CommonJS
+  build, `bundler/` (`wasm-bindgen --target bundler`, the default export
+  for bundlers such as webpack) and `web/` (`--target web`, imported as
+  `@openbim/ifcx/web`, with an async `init()` that loads the wasm module).
+  `package.json` `exports` selects the build (`node` condition: CommonJS;
+  otherwise the bundler build), with TypeScript declarations for each.
+  The Node API and entry point are unchanged.
+- `fetchImports(layers, { baseUrl, fetch, imports, signal })`: resolves
+  the layers' imports recursively in JavaScript with `fetch` (or any
+  function returning a `Response`, bytes or text) and returns them keyed
+  by import `uri` for the existing in-memory `imports` option. The Rust
+  crates still perform no network access (ADR 0002). A file that cannot be
+  fetched rejects with an `IfcxError` with the new code `fetch`.
+- `scripts/build-npm-pkg.sh` (was `build-node-pkg.sh`) binds all three
+  targets, runs the Node suite, and `tools/check-package.mjs` checks the
+  packed tarball: Node `require` and `import`, a webpack bundle (webpack
+  pinned in `tools/package-lock.json`), and both browser builds in
+  headless Chrome, parsing, validating, composing, fetching imports and
+  exporting GLB from the repository's fixtures.
+
+#### Changed
+
+- Through `openbim-ifcx-binding-core`: layers with `imports` are stacked by
+  `openbim-ifcx`'s `LayerStackBuilder::build_all`, and composition moves
+  the parsed layers instead of copying them. Layer order, results and
+  reports are unchanged (#42, #43).
+
+### `openbim-ifcx-py` 0.1.2 (2026-10-03)
+
+#### Changed
+
+- Built on `openbim-ifcx` 0.1.1 and `openbim-ifcx-geometry` 0.1.1:
+  validation with imports checks every layer against the schemas of all
+  layers, flattening and composition no longer copy attribute values, and
+  the fuzzing fixes apply (deep schema inheritance, oversized coordinates,
+  exponential scene walks, malformed PCD headers).
+
+- The README, which is the PyPI page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
+
+### `openbim-ifcx-geometry` 0.1.1 (2026-10-03)
+
+No breaking change. Requires `openbim-ifcx` 0.1.1.
+
+#### Added
+
+- `ifcx2glb --resolve-imports` loads every layer's `imports` through
+  `openbim_ifcx::layers::FsResolver` before exporting, stacked as upstream's
+  `ifcx compose` does; `--mirror PREFIX=DIR` (repeatable) maps a URI prefix
+  such as `https://ifcx.dev/` to an offline copy. The example now flattens
+  with `flatten_owned` (#42, #43).
+- Test fixture `imports-panel-type.ifcx`, whose panels inherit a type only
+  its import defines, and `tests/imports.rs`, which exports it with the
+  import resolved (#42).
+- Dev-dependency on `openbim-ifcx` with feature `fs`, for the example and
+  its test.
+- `SceneOptions::max_visits` (default 10 million) and
+  `SceneOptions::max_path_bytes` (default 1 GiB), with builders and
+  `DEFAULT_*` constants, bound the render-scene walk. When one is reached
+  the walk stops with a `SceneWarningKind::LimitReached` warning (#41).
+- `SceneWarningKind::OutOfRange` for geometry and instances whose
+  coordinates the scene's `f32` buffers and matrices cannot hold (#41).
+
+#### Fixed
+
+- `RenderScene::from_composition` no longer visits an exponential number of
+  paths: composition shares sub-trees, so 40 nodes naming the next one twice
+  as children described 2^40 instances. Deep trees with long child names no
+  longer build instance paths without bound. Found while fuzzing (#41).
+- Coordinates beyond `f32` range (for example a translation of `5e299`)
+  no longer produce infinite render matrices, buffers, or origins, which
+  `to_glb` wrote as JSON `null`; such geometry and instances are left out
+  with an `OutOfRange` warning. `to_glb` writes an infinite `alphaCutoff` as
+  `f32::MAX` and a NaN one as `0.5`. Found by fuzzing (#41).
+- `PointCloud::from_pcd` returns `InvalidPcd` for ASCII data whose `COUNT`
+  values overflow `usize` when summed, instead of panicking with overflow
+  checks on (or reading the wrong column without). Found while fuzzing
+  (#41).
+
+### `openbim-ifcx-py` 0.1.1 (2026-10-03)
+
+#### Fixed
+
+- The source distribution carries `LICENSE` at its root, where its metadata
+  names it. PyPI rejected the 0.1.0 sdist for the missing file, so 0.1.0 is
+  available as wheels only.
+
+### `openbim-ifcx` 0.1.1 (2026-10-03)
 
 No breaking change: every addition below is new API, and existing
 functions and types keep their signatures.
@@ -151,126 +283,6 @@ functions and types keep their signatures.
   inheritance doubled the work per level (22 levels took seconds and
   reported one failure four million times); a schema reached along several
   paths now reports its failures once. Found while fuzzing (#41).
-
-### `openbim-ifcx-geometry`
-
-#### Added
-
-- `ifcx2glb --resolve-imports` loads every layer's `imports` through
-  `openbim_ifcx::layers::FsResolver` before exporting, stacked as upstream's
-  `ifcx compose` does; `--mirror PREFIX=DIR` (repeatable) maps a URI prefix
-  such as `https://ifcx.dev/` to an offline copy. The example now flattens
-  with `flatten_owned` (#42, #43).
-- Test fixture `imports-panel-type.ifcx`, whose panels inherit a type only
-  its import defines, and `tests/imports.rs`, which exports it with the
-  import resolved (#42).
-- Dev-dependency on `openbim-ifcx` with feature `fs`, for the example and
-  its test. The example and tests use API added to `openbim-ifcx` after
-  0.1.0, so the `openbim-ifcx` requirement must move to that release when
-  this crate is next released.
-- `SceneOptions::max_visits` (default 10 million) and
-  `SceneOptions::max_path_bytes` (default 1 GiB), with builders and
-  `DEFAULT_*` constants, bound the render-scene walk. When one is reached
-  the walk stops with a `SceneWarningKind::LimitReached` warning (#41).
-- `SceneWarningKind::OutOfRange` for geometry and instances whose
-  coordinates the scene's `f32` buffers and matrices cannot hold (#41).
-
-#### Fixed
-
-- `RenderScene::from_composition` no longer visits an exponential number of
-  paths: composition shares sub-trees, so 40 nodes naming the next one twice
-  as children described 2^40 instances. Deep trees with long child names no
-  longer build instance paths without bound. Found while fuzzing (#41).
-- Coordinates beyond `f32` range (for example a translation of `5e299`)
-  no longer produce infinite render matrices, buffers, or origins, which
-  `to_glb` wrote as JSON `null`; such geometry and instances are left out
-  with an `OutOfRange` warning. `to_glb` writes an infinite `alphaCutoff` as
-  `f32::MAX` and a NaN one as `0.5`. Found by fuzzing (#41).
-- `PointCloud::from_pcd` returns `InvalidPcd` for ASCII data whose `COUNT`
-  values overflow `usize` when summed, instead of panicking with overflow
-  checks on (or reading the wrong column without). Found while fuzzing
-  (#41).
-
-### `openbim-ifcx-binding-core`
-
-Not released on its own (`publish = false`): it ships inside the npm and
-PyPI packages, whose changelogs name the releases.
-
-#### Changed
-
-- `LayerSet` with imports stacks its layers with
-  `LayerStackBuilder::build_all` instead of building its own synthetic main
-  layer; the order and the reports are unchanged. Federation and
-  composition move the parsed layers instead of copying them
-  (`federate_owned`, `LayerStack::into_federated`, `flatten_owned`) (#42,
-  #43).
-
-#### Added
-
-- The host-independent half of the language bindings: `Document` (read,
-  lossless write, header, validation against the file's own schemas),
-  `LayerSet` (layers weakest first, optional in-memory imports under a
-  synthetic main layer, composition into a `{path, attributes, children}`
-  tree, federated validation, GLB export through `openbim-ifcx-geometry`), validation reports with stable failure
-  `kind` codes, and `BindingError` with the stable codes `read`, `write`,
-  `layer`, `compose`, `invalid-argument` and `glb`.
-
-### `openbim-ifcx-py`
-
-#### Changed
-
-- The README, which is the PyPI page, links the documentation site
-  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
-  <https://openbimrs.github.io/ifcx/viewer/> (#64).
-
-### `openbim-ifcx-wasm`
-
-#### Changed
-
-- The README, which is the npm page, links the documentation site
-  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
-  <https://openbimrs.github.io/ifcx/viewer/> (#64).
-
-## Releases
-
-### `openbim-ifcx-wasm` 0.2.0 (2026-10-03)
-
-#### Added
-
-- Browser builds in the same npm package (#46): next to the Node CommonJS
-  build, `bundler/` (`wasm-bindgen --target bundler`, the default export
-  for bundlers such as webpack) and `web/` (`--target web`, imported as
-  `@openbim/ifcx/web`, with an async `init()` that loads the wasm module).
-  `package.json` `exports` selects the build (`node` condition: CommonJS;
-  otherwise the bundler build), with TypeScript declarations for each.
-  The Node API and entry point are unchanged.
-- `fetchImports(layers, { baseUrl, fetch, imports, signal })`: resolves
-  the layers' imports recursively in JavaScript with `fetch` (or any
-  function returning a `Response`, bytes or text) and returns them keyed
-  by import `uri` for the existing in-memory `imports` option. The Rust
-  crates still perform no network access (ADR 0002). A file that cannot be
-  fetched rejects with an `IfcxError` with the new code `fetch`.
-- `scripts/build-npm-pkg.sh` (was `build-node-pkg.sh`) binds all three
-  targets, runs the Node suite, and `tools/check-package.mjs` checks the
-  packed tarball: Node `require` and `import`, a webpack bundle (webpack
-  pinned in `tools/package-lock.json`), and both browser builds in
-  headless Chrome, parsing, validating, composing, fetching imports and
-  exporting GLB from the repository's fixtures.
-
-#### Changed
-
-- Through `openbim-ifcx-binding-core`: layers with `imports` are stacked by
-  `openbim-ifcx`'s `LayerStackBuilder::build_all`, and composition moves
-  the parsed layers instead of copying them. Layer order, results and
-  reports are unchanged (#42, #43).
-
-### `openbim-ifcx-py` 0.1.1 (2026-10-03)
-
-#### Fixed
-
-- The source distribution carries `LICENSE` at its root, where its metadata
-  names it. PyPI rejected the 0.1.0 sdist for the missing file, so 0.1.0 is
-  available as wheels only.
 
 ### `openbim-ifcx-geometry` 0.1.0 (2026-10-03)
 
