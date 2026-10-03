@@ -32,8 +32,11 @@ bundlers (webpack, Rollup) and plain browser pages, with TypeScript
 declarations for each. Every build is tested from the packed tarball,
 the browser builds in headless Chrome.
 
-Try it in the browser: the [demo viewer](https://openbimrs.github.io/ifcx/viewer/)
-composes a file with this package and shows the GLB with three.js.
+Try it in the browser: the [viewer](https://openbimrs.github.io/ifcx/viewer/)
+composes a file with this package and shows the GLB with three.js, on
+desktop and on phones. The [documentation](https://openbimrs.github.io/ifcx/)
+has a [JavaScript guide](https://openbimrs.github.io/ifcx/guide/javascript)
+and the [API reference](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-wasm).
 
 Targets the `ifcx_alpha` draft of buildingSMART's IFC5. IFCX is still a
 moving draft; see the
@@ -277,6 +280,14 @@ MIT, like the rest of `openbimrs/ifcx`.
 - Depends on [`openbim-ifcx-binding-core`](./openbim-ifcx-binding-core)
 
 ## Changes
+
+Unreleased, on `main`:
+
+#### Changed
+
+- The README, which is the npm page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
 
 Latest release, 0.2.0 (2026-10-03):
 

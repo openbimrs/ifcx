@@ -26,6 +26,10 @@ Features:
   uses the network.
 
 See the
-[repository capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md).
+[repository capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md),
+the [documentation](https://openbimrs.github.io/ifcx/) with a
+[Rust guide](https://openbimrs.github.io/ifcx/guide/rust), and the
+[viewer](https://openbimrs.github.io/ifcx/viewer/), which shows an IFCX file
+in the browser.
 
 Licensed under MIT.

@@ -27,10 +27,10 @@ install, getting started in Rust, JavaScript and Python, one reference page
 per crate, the Rust API (rustdoc), capabilities, the upstream evidence, the
 decision records and the changelog.
 
-**Demo:** [openbimrs.github.io/ifcx](https://openbimrs.github.io/ifcx/)
+**Viewer:** [openbimrs.github.io/ifcx/viewer](https://openbimrs.github.io/ifcx/viewer/)
 composes an `.ifcx` file in your browser with `@openbim/ifcx`, exports GLB
 and shows it with three.js, with the node tree, picked attributes and
-validation failures ([`demo/`](demo/README.md)).
+validation failures, on desktop and on phones ([`demo/`](demo/README.md)).
 
 The crates, generated from their manifests and changelogs:
 

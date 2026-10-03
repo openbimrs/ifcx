@@ -1,24 +1,44 @@
-name: Demo
+name: Pages
 
-# Builds the demo viewer in demo/ against @openbim/ifcx built from this
-# commit's source (never a published version) and deploys it to GitHub
-# Pages: https://openbimrs.github.io/ifcx/. Pull requests touching it only
-# build it.
+# Builds the documentation site and deploys it to GitHub Pages:
+#
+#   https://openbimrs.github.io/ifcx/                 VitePress, from docs/
+#   https://openbimrs.github.io/ifcx/api/rustdoc/     rustdoc of the workspace
+#   https://openbimrs.github.io/ifcx/viewer/          the demo viewer, demo/
+#
+# Everything is built from this commit's source: the viewer uses
+# @openbim/ifcx built here, never a published version. Before upload the
+# whole site is checked for buildingSMART material against an upstream
+# checkout at the revision the evidence was recorded at. Pull requests that
+# touch the site only build it.
 
 on:
   push:
     branches: [main]
     paths:
+      - "docs/**"
       - "demo/**"
-      - "crates/openbim-ifcx/**"
-      - "crates/openbim-ifcx-geometry/**"
-      - "crates/openbim-ifcx-binding-core/**"
-      - "crates/openbim-ifcx-wasm/**"
+      - "xtask/**"
+      - "crates/**"
+      - "Cargo.toml"
       - "Cargo.lock"
+      - "package.json"
+      - "package-lock.json"
+      # Sources of generated pages.
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
+      - "scripts/upstream-drift/baseline.txt"
+      - "scripts/check-leakage.py"
       - ".github/workflows/pages.yml"
   pull_request:
     paths:
+      - "docs/**"
       - "demo/**"
+      - "xtask/**"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/check-leakage.py"
       - "crates/openbim-ifcx-wasm/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -34,7 +54,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build demo
+    name: Build site
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
@@ -49,21 +69,61 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
+      - name: Set up Python
+        # xtask reads the Python binding's API with python3's `ast`.
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
       - name: Install wasm-bindgen CLI
         # Must equal the `wasm-bindgen` pin in crates/openbim-ifcx-wasm/Cargo.toml.
         uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
         with:
           tool: wasm-bindgen-cli@0.2.128
+
+      - name: Generated docs must match their sources
+        run: cargo run --quiet --locked -p xtask -- docs --check
+      - name: Install docs toolchain
+        run: npm ci --no-audit --no-fund
+      - name: Build the documentation site
+        run: npm run docs:build
+
+      # rustdoc is built from the same doc comments the gate checks with
+      # -D warnings and nested under the site at /api/rustdoc/, beside the
+      # hand-written /api/ landing page.
+      - name: Build the Rust API reference
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --workspace --all-features --no-deps --locked
+      - name: Nest rustdoc under the site at /api/rustdoc/
+        run: |
+          mkdir -p docs/.vitepress/dist/api/rustdoc
+          cp -r target/doc/. docs/.vitepress/dist/api/rustdoc/
+
       - name: Build and test @openbim/ifcx from source
         # Writes crates/openbim-ifcx-wasm/pkg, which demo/vite.config.js
         # aliases; the checks include the browser builds in headless Chrome.
         run: crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh
-      - name: Install demo dependencies
+      - name: Install viewer dependencies
         working-directory: demo
         run: npm ci --no-audit --no-fund
-      - name: Build demo
+      - name: Build the viewer
         working-directory: demo
         run: npm run build
+      - name: Nest the viewer under the site at /viewer/
+        run: cp -r demo/dist docs/.vitepress/dist/viewer
+
+      - name: Check out upstream at the recorded revision
+        # Only to compare against: nothing from it is built or published.
+        run: |
+          rev=$(grep -oE '[0-9a-f]{40}' scripts/upstream-drift/baseline.txt | head -n 1)
+          git init -q .upstream
+          git -C .upstream fetch -q --depth 1 https://github.com/buildingSMART/IFC5-development.git "$rev"
+          git -C .upstream checkout -q FETCH_HEAD
+      - name: Reject buildingSMART material in the built site
+        env:
+          IFCX_UPSTREAM_DIR: .upstream
+        run: python3 scripts/check-leakage.py docs/.vitepress/dist
+
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
@@ -71,7 +131,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: demo/dist
+          path: docs/.vitepress/dist
 
   deploy:
     name: Deploy to GitHub Pages

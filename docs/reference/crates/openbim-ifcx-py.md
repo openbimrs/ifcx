@@ -29,6 +29,12 @@ Rust crate, from the `openbim-ifcx-py` crate in
 [openbimrs/ifcx](https://github.com/openbimrs/ifcx): one abi3 wheel for
 CPython 3.9 and later.
 
+The [documentation](https://openbimrs.github.io/ifcx/) has a
+[Python guide](https://openbimrs.github.io/ifcx/guide/python) and the
+[API reference](https://openbimrs.github.io/ifcx/reference/crates/openbim-ifcx-py);
+the [viewer](https://openbimrs.github.io/ifcx/viewer/) shows an IFCX file
+in the browser.
+
 Targets the `ifcx_alpha` draft of buildingSMART's IFC5. IFCX is still a
 moving draft; see the
 [capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md).
@@ -173,6 +179,14 @@ One IFCX file.
 - Depends on [`openbim-ifcx-binding-core`](./openbim-ifcx-binding-core)
 
 ## Changes
+
+Unreleased, on `main`:
+
+#### Changed
+
+- The README, which is the PyPI page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
 
 Latest release, 0.1.1 (2026-10-03):
 

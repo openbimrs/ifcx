@@ -90,6 +90,12 @@ latest release notes.
 
 #### Changed
 
+- GitHub Pages serves the documentation site at
+  <https://openbimrs.github.io/ifcx/>, with rustdoc under `/api/rustdoc/`
+  and the viewer moved to <https://openbimrs.github.io/ifcx/viewer/> (Vite
+  `base`), all built and deployed together by `.github/workflows/pages.yml`,
+  which also checks the built site for buildingSMART material against an
+  upstream checkout (#64).
 - Workspace crates live under `crates/`, as in `openbimrs/ifc`.
 - License changed from AGPL-3.0 to MIT before any code or release.
 - MSRV is 1.88, matching `openbim-ifc` and `openbim-step`.
@@ -208,6 +214,22 @@ PyPI packages, whose changelogs name the releases.
   tree, federated validation, GLB export through `openbim-ifcx-geometry`), validation reports with stable failure
   `kind` codes, and `BindingError` with the stable codes `read`, `write`,
   `layer`, `compose`, `invalid-argument` and `glb`.
+
+### `openbim-ifcx-py`
+
+#### Changed
+
+- The README, which is the PyPI page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
+
+### `openbim-ifcx-wasm`
+
+#### Changed
+
+- The README, which is the npm page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
 
 ## Releases
 

@@ -18,8 +18,10 @@ if (!existsSync(web)) {
 }
 
 export default defineConfig({
-  // Relative asset URLs: the site is served below /ifcx/ on GitHub Pages.
-  base: "./",
+  // Served under the documentation site on GitHub Pages:
+  // https://openbimrs.github.io/ifcx/viewer/ (.github/workflows/pages.yml
+  // copies dist/ to viewer/). `npm run dev` and `preview` use the same path.
+  base: "/ifcx/viewer/",
   resolve: {
     alias: [{ find: /^@openbim\/ifcx\/web$/, replacement: web }],
   },

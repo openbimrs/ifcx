@@ -76,7 +76,11 @@ is fetched from the network.
 `scripts/gltf-validate.sh` (opt-in, needs Node.js) exports the fixtures and,
 with `IFCX_UPSTREAM_DIR`, every upstream example, and checks them with the
 Khronos glTF validator. See the
-[repository capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md).
+[repository capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md),
+the [documentation](https://openbimrs.github.io/ifcx/) with a
+[Rust guide](https://openbimrs.github.io/ifcx/guide/rust), and the
+[viewer](https://openbimrs.github.io/ifcx/viewer/), which shows an IFCX file
+in the browser.
 
 Licensed under MIT.
 
