@@ -30,6 +30,8 @@ dependencies, which a plain IFCX reader should not pay for.
   composition into a resolved node tree, and checking attributes against the
   file's own `schemas`, as modules of one crate. It depends on serde,
   serde_json, and indexmap (already required by serde_json's `preserve_order`).
+  Import `integrity` checks add `sha2` and `base64` behind the default
+  `integrity` feature; without it the crate needs only those three.
 - The reader preserves unknown fields so files from newer drafts round-trip.
 - Imports are resolved through a caller-supplied resolver trait. The core
   crate performs no network or filesystem access of its own.
@@ -42,7 +44,8 @@ dependencies, which a plain IFCX reader should not pay for.
   `usd::usdgeom::visibility`, `bsi::ifc::presentation::*`, and material
   bindings. It also writes the scene as GLB, so any glTF viewer can show an
   IFCX file. It depends on the core crate and never on a renderer, GPU API,
-  or `openbim-ifc`. The core crate stays free of geometry.
+  or `openbim-ifc`. Besides the core crate it uses `base64` for encoded point
+  clouds. The core crate stays free of geometry.
 
 Every capability names the draft revision it targets.
 
