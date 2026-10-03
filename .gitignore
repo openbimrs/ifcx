@@ -9,6 +9,7 @@
 /scripts/parity/node_modules/
 /scripts/gltf/node_modules/
 /crates/openbim-ifcx-wasm/pkg/
+/crates/openbim-ifcx-wasm/tools/node_modules/
 __pycache__/
 *.pyc
 /.upstream/

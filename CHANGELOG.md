@@ -16,6 +16,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The `bindings` gate section and CI also check `@openbim/ifcx` as packed,
+  including its browser builds in headless Chrome
+  (`crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh`, #46).
 - Weekly upstream drift check (`.github/workflows/upstream-drift.yml`,
   `scripts/upstream-drift.sh`): runs every opt-in upstream check against
   buildingSMART/IFC5-development's default branch with an `ifcx.dev` import

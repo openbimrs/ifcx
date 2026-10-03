@@ -26,7 +26,7 @@ authoritative list of what exists.
 | --- | --- | --- |
 | `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | crates.io from 0.1.0 |
 | `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export | crates.io from 0.1.0 |
-| `openbim-ifcx-wasm` | JavaScript / TypeScript binding: read, write, validate, compose, GLB export | npm as [`@openbim/ifcx`](crates/openbim-ifcx-wasm/README.md) from 0.1.0 |
+| `openbim-ifcx-wasm` | JavaScript / TypeScript binding for Node, bundlers and browsers: read, write, validate, compose, fetch imports, GLB export | npm as [`@openbim/ifcx`](crates/openbim-ifcx-wasm/README.md) from 0.1.0 |
 | `openbim-ifcx-py` | Python binding: read, write, validate, compose, GLB export | PyPI as [`openbim-ifcx`](crates/openbim-ifcx-py/README.md) from 0.1.0 |
 | `openbim-ifcx-binding-core` | Host-independent core shared by both bindings | no (ships inside them) |
 
@@ -37,7 +37,8 @@ authoritative list of what exists.
 ```
 
 Rust 2021, MSRV 1.88, pure Rust, no `unsafe`. The `bindings` section of the
-gate also needs `wasm-bindgen-cli` 0.2.128, Node, `uv`, and `maturin`; see
+gate also needs `wasm-bindgen-cli` 0.2.128, Node, Chrome or Chromium, `uv`,
+and `maturin`; see
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License

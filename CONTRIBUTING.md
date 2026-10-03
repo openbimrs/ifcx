@@ -184,7 +184,7 @@ registry settings follow.
 
   ```bash
   git checkout main && git pull
-  crates/openbim-ifcx-wasm/scripts/build-node-pkg.sh   # builds pkg/ and runs the Node suite
+  crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh    # builds pkg/, runs the Node suite and the browser check
   cd crates/openbim-ifcx-wasm/pkg
   npm login
   npm publish --access public

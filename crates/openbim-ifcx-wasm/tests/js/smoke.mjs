@@ -1,5 +1,6 @@
 // Suite for the openbim-ifcx-wasm Node package, run against the built
-// package by scripts/build-node-pkg.sh.
+// package by scripts/build-npm-pkg.sh. The browser builds are checked by
+// tools/check-package.mjs with the shared checks in web/smoke-core.mjs.
 //
 // Proves the binding works from JavaScript, not just that it compiles: read
 // and write back the hand-written fixtures, validate, compose layers with
@@ -16,7 +17,7 @@ import { fileURLToPath } from "node:url";
 
 const pkg = path.resolve(process.env.IFCX_WASM_PKG ?? "pkg");
 const ifcx = createRequire(import.meta.url)(pkg);
-const { IfcxFile, compose, exportGlb, validate } = ifcx;
+const { IfcxFile, compose, exportGlb, fetchImports, validate } = ifcx;
 
 const fixtures = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -54,7 +55,19 @@ test("the package is the npm package the release publishes", () => {
   const manifest = JSON.parse(readFileSync(path.join(pkg, "package.json"), "utf8"));
   assert.equal(manifest.name, "@openbim/ifcx");
   for (const file of manifest.files) {
-    assert.ok(readFileSync(path.join(pkg, file)).length > 0, file);
+    if (file.endsWith("/")) {
+      for (const name of ["openbim_ifcx_wasm.js", "openbim_ifcx_wasm.d.ts", "openbim_ifcx_wasm_bg.wasm", "fetch-imports.js", "package.json"]) {
+        assert.ok(readFileSync(path.join(pkg, file, name)).length > 0, file + name);
+      }
+    } else {
+      assert.ok(readFileSync(path.join(pkg, file)).length > 0, file);
+    }
+  }
+  // Every target of the exports map ships.
+  const targets = (value) =>
+    typeof value === "string" ? [value] : Object.values(value).flatMap(targets);
+  for (const target of targets(manifest.exports).filter((t) => !t.includes("*"))) {
+    assert.ok(readFileSync(path.join(pkg, target)).length > 0, target);
   }
 });
 
@@ -194,4 +207,96 @@ test("README example: read, validate, compose", () => {
   assert.equal(report.valid, true);
   assert.equal(out, IfcxFile.parse(out).write());
   assert.equal(storey.children.Roof.attributes["example::class"], "Roof");
+});
+
+/** A fetch function over the fixtures directory, recording each URL. */
+function fixtureFetch(seen = []) {
+  const base = "https://example.test/fixtures/";
+  const fetch = async (url) => {
+    seen.push(url);
+    if (!url.startsWith(base)) return { ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) };
+    try {
+      const body = readFileSync(path.join(fixtures, url.slice(base.length)));
+      return { ok: true, status: 200, arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.length) };
+    } catch {
+      return { ok: false, status: 404, statusText: "Not Found", arrayBuffer: async () => new ArrayBuffer(0) };
+    }
+  };
+  return { base, fetch, seen };
+}
+
+/** `promise` must reject with an IfcxError with this code. */
+async function rejectsCode(promise, code) {
+  await assert.rejects(promise, (error) => {
+    assert.equal(error.name, "IfcxError");
+    assert.equal(error.code, code, error.message);
+    return true;
+  });
+}
+
+test("fetchImports resolves imports relative to each importer, each once", async () => {
+  const { base, fetch, seen } = fixtureFetch();
+  const main = text("layers/chain/main.ifcx");
+  const imports = await fetchImports([main], { baseUrl: `${base}layers/chain/`, fetch });
+  assert.ok(imports instanceof Map);
+  assert.deepEqual([...imports.keys()], ["mid.ifcx", "sub/base.ifcx"]);
+  // mid.ifcx imports "sub/base.ifcx" relative to its own URL.
+  assert.deepEqual(seen, [`${base}layers/chain/mid.ifcx`, `${base}layers/chain/sub/base.ifcx`]);
+  assert.deepEqual(imports.get("mid.ifcx"), bytes("layers/chain/mid.ifcx"));
+  // The integrity value in mid.ifcx holds for the fetched bytes.
+  assert.equal(validate([main], { imports }).valid, true);
+  const tampered = new Map(imports).set("sub/base.ifcx", text("minimal.ifcx"));
+  throwsCode(() => validate([main], { imports: tampered }), "layer");
+
+  // Files at hand are not fetched again, and their own imports are.
+  const partial = fixtureFetch();
+  const known = await fetchImports(main, {
+    baseUrl: new URL(`${base}layers/chain/`),
+    fetch: partial.fetch,
+    imports: { "mid.ifcx": text("layers/chain/mid.ifcx") },
+  });
+  assert.deepEqual([...known.keys()], ["mid.ifcx", "sub/base.ifcx"]);
+  assert.deepEqual(partial.seen, [`${base}layers/chain/sub/base.ifcx`]);
+
+  // A cycle terminates; the binding reports it.
+  const cycle = fixtureFetch();
+  const looped = await fetchImports(text("layers/cycle/a.ifcx"), { baseUrl: `${base}layers/cycle/`, fetch: cycle.fetch });
+  assert.ok(looped.size >= 1 && cycle.seen.length === looped.size);
+
+  // Nothing to import, nothing fetched; unreadable layers are left to the binding.
+  assert.equal((await fetchImports([text("minimal.ifcx"), "not json"], { fetch })).size, 0);
+});
+
+test("fetchImports accepts any fetch function and fails with code fetch", async () => {
+  // A custom function may return the file itself, and gets a relative URI
+  // unchanged when there is no base URL.
+  const calls = [];
+  const direct = await fetchImports(text("layers/chain/main.ifcx"), {
+    fetch: async (url) => {
+      calls.push(url);
+      return url === "mid.ifcx" ? text("layers/chain/mid.ifcx") : bytes("layers/chain/sub/base.ifcx").buffer;
+    },
+  });
+  assert.deepEqual(calls, ["mid.ifcx", "sub/base.ifcx"]);
+  assert.equal(typeof direct.get("mid.ifcx"), "string");
+  assert.ok(direct.get("sub/base.ifcx") instanceof Uint8Array);
+
+  const { base, fetch } = fixtureFetch();
+  await rejectsCode(
+    fetchImports(text("layers/missing/main.ifcx"), { baseUrl: `${base}layers/missing/`, fetch }),
+    "fetch",
+  );
+  await assert.rejects(
+    fetchImports(text("layers/missing/main.ifcx"), { baseUrl: `${base}layers/missing/`, fetch }),
+    /absent\.ifcx.*HTTP 404 Not Found/,
+  );
+  const cause = new Error("offline");
+  await assert.rejects(
+    fetchImports(text("layers/chain/main.ifcx"), { baseUrl: base, fetch: async () => { throw cause; } }),
+    (error) => error.code === "fetch" && error.cause === cause,
+  );
+  await rejectsCode(fetchImports(text("layers/chain/main.ifcx"), { fetch: async () => 42 }), "fetch");
+  // Node has no page URL to resolve a relative import against.
+  await rejectsCode(fetchImports(text("layers/chain/main.ifcx")), "fetch");
+  await rejectsCode(fetchImports([7]), "fetch");
 });

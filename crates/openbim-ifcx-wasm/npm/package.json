@@ -1,6 +1,6 @@
 {
   "name": "@openbim/ifcx",
-  "description": "Read, write, validate and compose IFC5 / IFCX files, and export GLB, from JavaScript (WebAssembly build of openbim-ifcx).",
+  "description": "Read, write, validate and compose IFC5 / IFCX files, and export GLB, from JavaScript in Node and the browser (WebAssembly build of openbim-ifcx).",
   "version": "0.1.0",
   "license": "MIT",
   "repository": {
@@ -11,16 +11,42 @@
   "type": "commonjs",
   "main": "openbim_ifcx_wasm.js",
   "types": "openbim_ifcx_wasm.d.ts",
+  "exports": {
+    ".": {
+      "node": {
+        "types": "./openbim_ifcx_wasm.d.ts",
+        "default": "./openbim_ifcx_wasm.js"
+      },
+      "default": {
+        "types": "./bundler/openbim_ifcx_wasm.d.ts",
+        "default": "./bundler/openbim_ifcx_wasm.js"
+      }
+    },
+    "./bundler": {
+      "types": "./bundler/openbim_ifcx_wasm.d.ts",
+      "default": "./bundler/openbim_ifcx_wasm.js"
+    },
+    "./web": {
+      "types": "./web/openbim_ifcx_wasm.d.ts",
+      "default": "./web/openbim_ifcx_wasm.js"
+    },
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
   "files": [
     "openbim_ifcx_wasm.js",
     "openbim_ifcx_wasm.d.ts",
     "openbim_ifcx_wasm_bg.wasm",
     "openbim_ifcx_wasm_bg.wasm.d.ts",
+    "fetch-imports.js",
+    "fetch-imports.d.ts",
+    "bundler/",
+    "web/",
     "README.md",
     "LICENSE"
   ],
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["ifcx", "ifc5", "ifc", "bim", "openbim", "gltf", "wasm"]
+  "keywords": ["ifcx", "ifc5", "ifc", "bim", "openbim", "gltf", "wasm", "browser"]
 }
