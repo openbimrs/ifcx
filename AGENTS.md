@@ -6,8 +6,8 @@ implemented without executable evidence in this repository.
 
 ## Map
 
-- `openbim-ifcx/` — the planned model and composition crate (status only today)
-- `openbim-ifcx-geometry/` — planned geometry and viewer helpers; depends on the core crate, never on a renderer
+- `crates/openbim-ifcx/` — the planned model and composition crate (status only today)
+- `crates/openbim-ifcx-geometry/` — planned geometry and viewer helpers; depends on the core crate, never on a renderer
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
 - `scripts/gate.sh` — complete local/CI verification gate
