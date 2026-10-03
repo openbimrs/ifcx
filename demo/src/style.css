@@ -62,6 +62,19 @@ h1 {
   font-size: 18px;
 }
 
+/* The viewer is served under the documentation site, at /ifcx/viewer/. */
+.title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.docs-link {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 h2 {
   margin: 0 0 6px;
   font-size: 12px;

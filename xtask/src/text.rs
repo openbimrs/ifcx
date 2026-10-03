@@ -37,7 +37,6 @@ pub(crate) fn splice(text: &str, region: &str, body: &str) -> Result<String, Str
 /// - relative links become absolute GitHub links, since the site has no
 ///   copy of the files they point at (VitePress fails the build on a dead
 ///   link), except links to `docs/*.md` pages, which become site routes;
-/// - links to the old demo root become the viewer's path;
 /// - `<` and `{{` outside code are escaped, because VitePress parses
 ///   Markdown as a Vue template and `Vec<T>` in prose would be a component.
 pub(crate) fn publishable(markdown: &str, dir: &str) -> String {
@@ -86,9 +85,6 @@ pub(crate) fn links(line: &str, dir: &str) -> String {
 }
 
 fn rewrite(target: &str, dir: &str) -> String {
-    if target == "https://openbimrs.github.io/ifcx/" {
-        return "https://openbimrs.github.io/ifcx/viewer/".to_owned();
-    }
     if target.contains("://") || target.starts_with('#') || target.starts_with("mailto:") {
         return target.to_owned();
     }
@@ -264,10 +260,6 @@ mod tests {
         assert_eq!(
             links("[w](https://a.b) [h](#top)", ""),
             "[w](https://a.b) [h](#top)"
-        );
-        assert_eq!(
-            links("[v](https://openbimrs.github.io/ifcx/)", ""),
-            "[v](https://openbimrs.github.io/ifcx/viewer/)"
         );
     }
 

@@ -9,6 +9,12 @@ repository.
 
 ## [Unreleased]
 
+### Changed
+
+- The README, which is the npm page, links the documentation site
+  (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
+  <https://openbimrs.github.io/ifcx/viewer/> (#64).
+
 ## [0.2.0] - 2026-10-03
 
 ### Added

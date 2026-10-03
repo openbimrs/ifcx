@@ -10,7 +10,8 @@ editLink: false
 [Open the viewer](/viewer/){target="_self"}
 :::
 
-**Live:** <https://openbimrs.github.io/ifcx/>
+**Live:** <https://openbimrs.github.io/ifcx/viewer/>, part of the
+[documentation site](https://openbimrs.github.io/ifcx/).
 
 A static page that composes an IFC5 / IFCX file in the browser with
 [`@openbim/ifcx`](https://github.com/openbimrs/ifcx/blob/main/crates/openbim-ifcx-wasm/README.md) (its `web` build),
@@ -47,7 +48,11 @@ npm ci
 npm run dev       # or: npm run build && npm run preview
 ```
 
+`npm run dev` and `npm run preview` serve it under `/ifcx/viewer/`, the
+path it has on GitHub Pages (Vite's `base`).
+
 Versions are pinned in `package.json` and `package-lock.json` (three.js,
-Vite). `.github/workflows/pages.yml` builds the demo the same way and
-deploys `demo/dist` to GitHub Pages on pushes to `main` that touch the demo,
-the wasm crate or the crates it builds on.
+Vite). `.github/workflows/pages.yml` builds the viewer the same way, with
+the documentation site and rustdoc, and deploys `demo/dist` as `viewer/`
+of the site on pushes to `main` that touch the docs, the demo or the
+crates.
