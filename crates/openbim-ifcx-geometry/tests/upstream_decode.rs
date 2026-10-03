@@ -1,10 +1,11 @@
 //! Opt-in check against a local checkout of buildingSMART/IFC5-development.
 //!
-//! Decodes every `usd::xformop`, `usd::usdgeom::mesh`, and
-//! `usd::usdgeom::basiscurves` attribute in upstream's example files and
-//! reports counts and failures. Upstream publishes no license, so its files
-//! are never committed here. Set `IFCX_UPSTREAM_DIR` to a checkout to run
-//! this; without it the test passes without doing anything.
+//! Decodes every `usd::xformop`, `usd::usdgeom::mesh`,
+//! `usd::usdgeom::basiscurves`, point-cloud, and presentation attribute in
+//! upstream's example files and reports counts and failures. Upstream
+//! publishes no license, so its files are never committed here. Set
+//! `IFCX_UPSTREAM_DIR` to a checkout to run this; without it the test passes
+//! without doing anything.
 //!
 //! ```sh
 //! IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx-geometry \
@@ -12,9 +13,15 @@
 //! ```
 
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 use openbim_ifcx::IfcxFile;
-use openbim_ifcx_geometry::{curves, mesh, transform, CurveGeometry, Transform, TriangleMesh};
+use openbim_ifcx_geometry::points::{PCD_BASE64, POINTS_ARRAY, POINTS_BASE64};
+use openbim_ifcx_geometry::presentation::{DIFFUSE_COLOR, GLTF_MATERIAL, OPACITY, VISIBILITY};
+use openbim_ifcx_geometry::{
+    curves, mesh, transform, Attributes, CurveGeometry, NodePresentation, PointCloud, Transform,
+    TriangleMesh,
+};
 
 fn ifcx_files(dir: &Path, out: &mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(dir).unwrap() {
@@ -135,6 +142,94 @@ fn upstream_geometry_attributes_decode() {
         total.polyline_vertices,
         total.unsupported_curves,
         total.deletions,
+        failures.len()
+    );
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[derive(Default)]
+struct PresentationCounts {
+    clouds: [usize; 3],
+    points: usize,
+    colored: usize,
+    presentation: [usize; 4],
+    pbr: usize,
+}
+
+#[test]
+fn upstream_point_clouds_and_presentation_decode() {
+    let Some(dir) = std::env::var_os("IFCX_UPSTREAM_DIR") else {
+        eprintln!("IFCX_UPSTREAM_DIR not set; skipping");
+        return;
+    };
+    let mut files = Vec::new();
+    ifcx_files(Path::new(&dir), &mut files);
+    files.sort();
+    assert!(!files.is_empty(), "no .ifcx files under {dir:?}");
+
+    let mut counts = PresentationCounts::default();
+    let mut failures = Vec::new();
+    let mut total = Duration::ZERO;
+    for path in &files {
+        let name = path
+            .strip_prefix(&dir)
+            .unwrap_or(path)
+            .display()
+            .to_string();
+        let file = IfcxFile::from_json_slice(&std::fs::read(path).unwrap()).unwrap();
+        let start = Instant::now();
+        let mut file_points = 0;
+        for node in &file.data {
+            // Each encoding on its own, not only the one the viewer prefers.
+            for (i, (id, decode)) in [
+                (PCD_BASE64, PointCloud::from_pcd_base64 as fn(_) -> _),
+                (POINTS_ARRAY, PointCloud::from_points_array),
+                (POINTS_BASE64, PointCloud::from_points_base64),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let Some(value) = node.attribute(id) else {
+                    continue;
+                };
+                match decode(value) {
+                    Ok(cloud) => {
+                        assert!(cloud.positions.iter().flatten().all(|v| v.is_finite()));
+                        counts.clouds[i] += 1;
+                        counts.points += cloud.len();
+                        counts.colored += usize::from(cloud.colors.is_some());
+                        file_points += cloud.len();
+                    }
+                    Err(e) => failures.push(format!("{name} {}: {e}", node.path)),
+                }
+            }
+            match NodePresentation::from_attributes(node) {
+                Ok(p) => counts.pbr += usize::from(p.gltf_material.is_some()),
+                Err(e) => failures.push(format!("{name} {}: {e}", node.path)),
+            }
+            for (i, id) in [VISIBILITY, DIFFUSE_COLOR, OPACITY, GLTF_MATERIAL]
+                .into_iter()
+                .enumerate()
+            {
+                counts.presentation[i] += usize::from(node.attribute(id).is_some());
+            }
+        }
+        let elapsed = start.elapsed();
+        total += elapsed;
+        if file_points > 0 {
+            eprintln!("{file_points:>8} points  {elapsed:>9.1?}  {name}");
+        }
+    }
+    let [pcd, array, base64] = counts.clouds;
+    let [visibility, color, opacity, gltf] = counts.presentation;
+    eprintln!(
+        "{} files in {total:.1?}: point clouds pcd {pcd}, array {array}, base64 {base64} \
+         ({} points, {} coloured); visibility {visibility}, diffuseColor {color}, \
+         opacity {opacity}, gltf::material {gltf} ({} PBR); {} failures",
+        files.len(),
+        counts.points,
+        counts.colored,
+        counts.pbr,
         failures.len()
     );
     assert!(failures.is_empty(), "{}", failures.join("\n"));
