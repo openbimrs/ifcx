@@ -1,0 +1,26 @@
+[build-system]
+requires = ["maturin>=1.13,<2"]
+build-backend = "maturin"
+
+[project]
+name = "openbim-ifcx"
+version = "0.1.0"
+description = "Read, write, validate, compose and export (GLB) IFC5 / IFCX files -- Python bindings for the openbim-ifcx Rust crate."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = ["ifcx", "ifc5", "ifc", "bim", "openbim"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Repository = "https://github.com/openbimrs/ifcx"
+
+[tool.maturin]
+# Mixed layout: the pure-Python package in python/openbim_ifcx wraps the
+# compiled extension, which lands at openbim_ifcx._native.
+python-source = "python"
+module-name = "openbim_ifcx._native"

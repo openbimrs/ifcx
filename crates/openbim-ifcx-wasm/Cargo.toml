@@ -1,0 +1,26 @@
+[package]
+name = "openbim-ifcx-wasm"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+authors = ["point-grey"]
+repository = "https://github.com/openbimrs/ifcx"
+homepage = "https://github.com/openbimrs/ifcx"
+description = "WebAssembly bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from JavaScript."
+keywords = ["bim", "openbim", "ifcx", "ifc5", "wasm"]
+categories = ["wasm", "parser-implementations"]
+# npm-only: distributed as `@openbim/ifcx`. On crates.io it would also need
+# openbim-ifcx-binding-core published, for a crate nobody depends on in Rust.
+publish = false
+
+[lib]
+# The wasm module. Native builds compile an empty crate: every operation and
+# its tests live in openbim-ifcx-binding-core.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Bindings reach IFCX through the shared binding core only.
+openbim-ifcx-binding-core = { path = "../openbim-ifcx-binding-core", version = "0.1.0" }
+wasm-bindgen = "=0.2.128"
+js-sys = "=0.3.105"

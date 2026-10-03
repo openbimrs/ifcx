@@ -1,0 +1,26 @@
+[package]
+name = "openbim-ifcx-binding-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+authors = ["point-grey"]
+repository = "https://github.com/openbimrs/ifcx"
+homepage = "https://github.com/openbimrs/ifcx"
+description = "Host-independent core shared by the openbim-ifcx language bindings (WebAssembly, Python)."
+keywords = ["bim", "openbim", "ifcx", "ffi", "bindings"]
+categories = ["parser-implementations"]
+# Internal to the bindings: the npm and PyPI packages are built from source,
+# so no registry needs it. Publishing it would make this layer a public Rust
+# API to keep stable.
+publish = false
+
+[dependencies]
+openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.0" }
+# GLB export of the render scene. Unpublished, which is fine here: this crate
+# and both bindings are `publish = false` and built from source.
+openbim-ifcx-geometry = { path = "../openbim-ifcx-geometry", version = "0.0.0" }
+serde = "1"
+# Same crate and features openbim-ifcx uses: key order and exact floats
+# survive into the JSON handed to the hosts.
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
