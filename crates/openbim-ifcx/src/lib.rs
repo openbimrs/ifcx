@@ -4,12 +4,13 @@
 //! is not an EXPRESS schema release, so it lives here rather than as a
 //! `SchemaVersion` in `openbim-ifc` (see `docs/adr/0001`).
 //!
-//! This crate reads and writes single `ifcx_alpha` files losslessly, flattens
-//! layered nodes by path ([`flatten`]), and checks attribute values against a
-//! file's `schemas` ([`IfcxFile::validate`], [`validate_attributes`]; rules in
+//! This crate reads and writes single `ifcx_alpha` files losslessly, composes
+//! layered nodes into a resolved tree ([`flatten`], then [`compose()`]; see
+//! [`compose`](mod@compose)), and checks attribute values against a file's
+//! `schemas` ([`IfcxFile::validate`], [`validate_attributes`]; rules in
 //! [`validate`](mod@validate)). [`layers`] loads a file with its imports
 //! through a caller-supplied resolver and federates them into one file, ready
-//! to flatten. Building the composed tree is not implemented yet.
+//! to flatten and compose.
 //!
 //! # Features
 //!
@@ -43,7 +44,7 @@ pub mod layers;
 mod model;
 pub mod validate;
 
-pub use compose::{flatten, FlatNode};
+pub use compose::{compose, flatten, ComposeError, ComposedNode, Composition, FlatNode};
 pub use json::{ReadError, ReadErrorKind, WriteError};
 pub use model::{
     ArrayRestrictions, DataType, EnumRestrictions, Extra, IfcxFile, IfcxHeader, IfcxNode,

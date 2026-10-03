@@ -11,6 +11,12 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `openbim-ifcx` flattens layered nodes by path in layer order
   (`flatten`, `FlatNode`), matching upstream `FlattenCompositionInput`;
   attribute values are shared through `Arc` (#13).
+- `openbim-ifcx` composes flattened nodes into a resolved tree (`compose`,
+  `Composition`, `ComposedNode`, `ComposeError`), matching upstream
+  `ComposeNode` and `CreateArtificialRoot`. Instances share composed
+  sub-trees through `Arc`; reference cycles, including ones through
+  `head/child` references that upstream misses, and unknown references are
+  typed errors (#14).
 - `openbim-ifcx::layers` resolves `imports` for `ifcx_alpha` through a
   caller-supplied `LayerResolver`: `LayerStackBuilder` loads the main layer
   and its imports once each in upstream order, `LayerStack::federate` merges

@@ -1,0 +1,126 @@
+{
+  "path": "",
+  "attributes": {},
+  "children": {
+    "site": {
+      "path": "site",
+      "attributes": {
+        "example::name": "Site"
+      },
+      "children": {
+        "Storey": {
+          "path": "storey",
+          "attributes": {
+            "example::name": "Ground floor",
+            "example::elevation": 0
+          },
+          "children": {
+            "Wall A": {
+              "path": "wall-a",
+              "attributes": {
+                "example::class": "Wall",
+                "example::fireRating": "EI60",
+                "example::transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+              },
+              "children": {
+                "Body": {
+                  "path": "wall-type-body",
+                  "attributes": {
+                    "example::mesh": {
+                      "points": [[0, 0, 0], [4, 0, 0], [4, 0.25, 0], [0, 0.25, 0]],
+                      "faceVertexIndices": [0, 1, 2, 0, 2, 3]
+                    }
+                  },
+                  "children": {
+                    "Material": {
+                      "path": "concrete",
+                      "attributes": {
+                        "example::colour": "light grey"
+                      },
+                      "children": {}
+                    }
+                  }
+                },
+                "Axis": {
+                  "path": "wall-type-axis",
+                  "attributes": {
+                    "example::curve": [[0, 0.125], [4, 0.125]]
+                  },
+                  "children": {}
+                }
+              }
+            },
+            "Wall B": {
+              "path": "wall-b",
+              "attributes": {
+                "example::class": "Wall",
+                "example::fireRating": "EI30",
+                "example::transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [5, 0, 0, 1]]
+              },
+              "children": {
+                "Body": {
+                  "path": "wall-type-body",
+                  "attributes": {
+                    "example::mesh": {
+                      "points": [[0, 0, 0], [4, 0, 0], [4, 0.25, 0], [0, 0.25, 0]],
+                      "faceVertexIndices": [0, 1, 2, 0, 2, 3]
+                    },
+                    "example::colour": "red"
+                  },
+                  "children": {
+                    "Material": {
+                      "path": "concrete",
+                      "attributes": {
+                        "example::colour": "dark grey"
+                      },
+                      "children": {}
+                    }
+                  }
+                },
+                "Opening": {
+                  "path": "opening",
+                  "attributes": {
+                    "example::class": "Opening"
+                  },
+                  "children": {
+                    "Cut": {
+                      "path": "wall-type-body",
+                      "attributes": {
+                        "example::mesh": {
+                          "points": [[0, 0, 0], [4, 0, 0], [4, 0.25, 0], [0, 0.25, 0]],
+                          "faceVertexIndices": [0, 1, 2, 0, 2, 3]
+                        }
+                      },
+                      "children": {
+                        "Material": {
+                          "path": "concrete",
+                          "attributes": {
+                            "example::colour": "light grey"
+                          },
+                          "children": {}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "annotations": {
+      "path": "annotations",
+      "attributes": {},
+      "children": {
+        "Note": {
+          "path": "note",
+          "attributes": {
+            "example::text": "Check wall B"
+          },
+          "children": {}
+        }
+      }
+    }
+  }
+}
