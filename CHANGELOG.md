@@ -8,6 +8,9 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `openbim-ifcx` flattens layered nodes by path in layer order
+  (`flatten`, `FlatNode`), matching upstream `FlattenCompositionInput`;
+  attribute values are shared through `Arc` (#13).
 - `openbim-ifcx` reads and writes `ifcx_alpha` files losslessly
   (`IfcxFile::from_json_*`, `to_json_*`): typed header, imports, schemas, and
   nodes; unknown fields kept at every level; `null` children and inherits

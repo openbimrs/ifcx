@@ -1,13 +1,13 @@
 # IFCX repository instructions
 
 This repository owns the OpenBIM.rs implementation of IFC5 / IFCX. The
-lossless file model and attribute validation are implemented. Do not describe
-composition, imports, or geometry as implemented without executable evidence
-here.
+lossless file model, flattening by path, and attribute validation are
+implemented. Do not describe the composed tree, imports, or geometry as
+implemented without executable evidence here.
 
 ## Map
 
-- `crates/openbim-ifcx/` — file model, JSON read/write, attribute validation (`src/validate.rs`); composition planned
+- `crates/openbim-ifcx/` — file model, JSON read/write, flattening (`src/compose/`), attribute validation (`src/validate.rs`); composed tree planned
 - `crates/openbim-ifcx-geometry/` — planned geometry and viewer helpers; depends on the core crate, never on a renderer
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
