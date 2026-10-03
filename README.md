@@ -11,15 +11,17 @@ rejects the `IFC5` schema token. See
 
 ## Status
 
-**Early.** Single files read and write losslessly. Layer composition,
-imports, schema validation, and geometry are not implemented, and no crate
-is published. [`docs/capabilities.md`](docs/capabilities.md) is the
+**Early.** Single files read and write losslessly, layered nodes flatten by
+path, attributes are checked against the file's `schemas`, and transform,
+mesh, and curve attributes decode into typed geometry. The composed node
+tree, imports, the render scene, and GLB export are not implemented, and no
+crate is published. [`docs/capabilities.md`](docs/capabilities.md) is the
 authoritative list of what exists.
 
 | Crate | Role | Published |
 | --- | --- | --- |
-| `openbim-ifcx` | IFCX file model and lossless JSON read/write; composition planned | no |
-| `openbim-ifcx-geometry` | Geometry and viewer helpers, GLB export (planned) | no |
+| `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening, attribute validation; composed tree planned | no |
+| `openbim-ifcx-geometry` | Transform, mesh, and curve decoders; render scene and GLB export planned | no |
 
 ## Development
 
