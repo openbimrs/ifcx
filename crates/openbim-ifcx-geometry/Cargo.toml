@@ -1,6 +1,6 @@
 [package]
 name = "openbim-ifcx-geometry"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"
@@ -12,8 +12,6 @@ readme = "README.md"
 description = "Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: transforms, meshes, curves, point clouds, presentation, a flat render scene, and GLB export."
 keywords = ["bim", "openbim", "ifcx", "geometry", "gltf"]
 categories = ["graphics", "rendering::data-formats"]
-# Not published yet; see docs/capabilities.md.
-publish = false
 
 [dependencies]
 openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.0" }

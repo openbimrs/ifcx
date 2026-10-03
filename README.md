@@ -25,7 +25,7 @@ authoritative list of what exists.
 | Crate | Role | Published |
 | --- | --- | --- |
 | `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | crates.io from 0.1.0 |
-| `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export | no |
+| `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export | crates.io from 0.1.0 |
 | `openbim-ifcx-wasm` | JavaScript / TypeScript binding: read, write, validate, compose, GLB export | npm as [`@openbim/ifcx`](crates/openbim-ifcx-wasm/README.md) from 0.1.0 |
 | `openbim-ifcx-py` | Python binding: read, write, validate, compose, GLB export | PyPI as [`openbim-ifcx`](crates/openbim-ifcx-py/README.md) from 0.1.0 |
 | `openbim-ifcx-binding-core` | Host-independent core shared by both bindings | no (ships inside them) |

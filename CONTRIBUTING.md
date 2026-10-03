@@ -59,10 +59,10 @@ targets. The gate runs once, in CI; the release does not run it again:
 
 | Crate | Registries |
 | --- | --- |
-| any crate without `publish = false` (`openbim-ifcx`) | crates.io |
+| any crate without `publish = false` (`openbim-ifcx`, `openbim-ifcx-geometry`) | crates.io |
 | `openbim-ifcx-wasm` | npm only (`@openbim/ifcx`) |
 | `openbim-ifcx-py` | PyPI only (`openbim-ifcx`): Linux x86_64 and aarch64, macOS universal2 and Windows x64 abi3 wheels plus an sdist |
-| `openbim-ifcx-binding-core`, `openbim-ifcx-geometry` | nowhere yet (`publish = false`) |
+| `openbim-ifcx-binding-core` | nowhere (`publish = false`) |
 
 The version in `crates/openbim-ifcx-wasm/npm/package.json` or
 `crates/openbim-ifcx-py/pyproject.toml` must equal the crate's. `--set
