@@ -15,15 +15,15 @@ rejects the `IFC5` schema token. See
 into a resolved node tree, imports resolve through a caller-supplied
 resolver, attributes are checked against the file's `schemas`, and a
 composed tree turns into a flat render scene of transformed, instanced
-meshes, lines, and point clouds with resolved materials. GLB export is not
-implemented, and no crate is published.
+meshes, lines, and point clouds with resolved materials, which exports as
+GLB. No crate is published.
 [`docs/capabilities.md`](docs/capabilities.md) is the
 authoritative list of what exists.
 
 | Crate | Role | Published |
 | --- | --- | --- |
 | `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | crates.io from 0.1.0 |
-| `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export planned | no |
+| `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export | no |
 
 ## Development
 

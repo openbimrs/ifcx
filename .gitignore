@@ -7,3 +7,4 @@
 .vscode/
 .hermes/
 /scripts/parity/node_modules/
+/scripts/gltf/node_modules/

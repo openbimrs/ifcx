@@ -12,6 +12,7 @@
 //! | [`points`] | `points::array`, `points::base64`, `pcd::base64` | [`PointCloud`] |
 //! | [`presentation`] | `usd::usdgeom::visibility`, `bsi::ifc::presentation::*`, `gltf::material` | [`NodePresentation`], resolved over ancestors by [`is_visible`], [`resolve_basic_material`], and [`resolve_mesh_material`] |
 //! | [`scene`] | all of the above, over a composed tree | [`RenderScene`]: instances with node path, world matrix, shared `f32` buffers, materials, bounds |
+//! | [`glb`] | a [`RenderScene`] | binary glTF 2.0 bytes, [`to_glb`] |
 //!
 //! Each decoder takes the attribute's `serde_json::Value` as stored in
 //! [`openbim_ifcx::IfcxNode::attributes`] and returns a [`DecodeError`] for
@@ -21,7 +22,8 @@
 //!
 //! [`RenderScene::from_composition`] walks a composed node tree once and
 //! returns the flat scene a viewer draws, with each shared geometry stored
-//! once and instanced. Not yet implemented: GLB export.
+//! once and instanced. [`to_glb`] writes that scene as a binary glTF 2.0 file;
+//! the `ifcx2glb` example converts IFCX files from the command line.
 //!
 //! ```
 //! use openbim_ifcx::IfcxFile;
@@ -99,6 +101,7 @@
 mod attributes;
 pub mod curves;
 pub mod error;
+pub mod glb;
 mod json;
 pub mod math;
 pub mod mesh;
@@ -110,6 +113,7 @@ pub mod transform;
 pub use attributes::Attributes;
 pub use curves::{CurveGeometry, Polyline, UnsupportedCurve};
 pub use error::DecodeError;
+pub use glb::{to_glb, GlbError, GlbOptions};
 pub use math::Vec3;
 pub use mesh::TriangleMesh;
 pub use points::PointCloud;

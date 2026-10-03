@@ -13,6 +13,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `scripts/gltf-validate.sh`: opt-in export of the geometry fixtures and,
+  with `IFCX_UPSTREAM_DIR`, every upstream example to GLB, validated with the
+  pinned Khronos glTF validator (`scripts/gltf/`). All 50 files at `1a63082`
+  pass with no errors or warnings (#9).
 - Release tooling: `scripts/release-crate.py` and `.github/workflows/release.yml`
   publish one crate per `<crate>-v<version>` tag to crates.io, as in
   `openbimrs/ifc`. Per-crate changelogs replace the single root entry list.
