@@ -18,6 +18,7 @@ authoritative list of what exists.
 | Crate | Role | Published |
 | --- | --- | --- |
 | `openbim-ifcx` | IFCX model and composition (planned) | no |
+| `openbim-ifcx-geometry` | Geometry and viewer helpers, GLB export (planned) | no |
 
 ## Development
 
@@ -25,7 +26,7 @@ authoritative list of what exists.
 ./scripts/gate.sh
 ```
 
-Rust 2021, MSRV 1.85, pure Rust, no `unsafe`.
+Rust 2021, MSRV 1.88, pure Rust, no `unsafe`.
 
 ## License
 
