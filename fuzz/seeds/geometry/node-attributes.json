@@ -1,0 +1,1 @@
+{"bsi::ifc::presentation::diffuseColor": [1, 0, 0], "bsi::ifc::presentation::opacity": 0.5, "usd::usdgeom::visibility": {"visibility": "inherited"}, "points::array": {"positions": [[0, 0, 0], [1, 1, 1]]}}

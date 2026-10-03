@@ -96,6 +96,26 @@
 //! an unsupported `type` are skipped with a warning as well. Each distinct
 //! value is reported once, at the first path that reaches it. Empty
 //! geometry is skipped without a warning.
+//!
+//! Buffers and render matrices are `f32`, so coordinates they cannot hold
+//! are left out with a [`SceneWarningKind::OutOfRange`] warning rather than
+//! written as infinities: a geometry whose vertices span more than
+//! `f32::MAX`, and an instance whose world bounds reach beyond a quarter of
+//! `f32::MAX` (about 8.5 × 10³⁷) or whose render matrix overflows `f32`.
+//! Every value in a scene is therefore finite.
+//!
+//! # Limits
+//!
+//! Composition shares sub-trees, so a small file can describe a tree whose
+//! paths are exponential in number: 30 nodes that each name the next twice
+//! as children reach the last one along 2³⁰ paths. The walk visits a node
+//! once per path, so [`SceneOptions`] bounds it: at most
+//! [`max_visits`](SceneOptions::max_visits) node visits (10 million by
+//! default) and at most [`max_path_bytes`](SceneOptions::max_path_bytes)
+//! bytes of instance paths built (1 GiB by default). When either is reached
+//! the walk stops, the scene keeps what was walked before, and one
+//! [`SceneWarningKind::LimitReached`] warning names the path where it
+//! stopped.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -124,17 +144,53 @@ pub enum Origin {
 }
 
 /// Options for [`RenderScene::from_composition`].
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub struct SceneOptions {
     /// The render origin; [`Origin::Auto`] by default.
     pub origin: Origin,
+    /// Most node visits of the walk, counting a node once per path that
+    /// reaches it; [`DEFAULT_MAX_VISITS`](Self::DEFAULT_MAX_VISITS) by
+    /// default. See [Limits](self#limits).
+    pub max_visits: usize,
+    /// Most bytes of node paths the walk builds, summed over every visit;
+    /// [`DEFAULT_MAX_PATH_BYTES`](Self::DEFAULT_MAX_PATH_BYTES) by default.
+    /// Bounds the memory of instance paths in deep trees with long names.
+    /// See [Limits](self#limits).
+    pub max_path_bytes: usize,
+}
+
+impl Default for SceneOptions {
+    fn default() -> Self {
+        Self {
+            origin: Origin::Auto,
+            max_visits: Self::DEFAULT_MAX_VISITS,
+            max_path_bytes: Self::DEFAULT_MAX_PATH_BYTES,
+        }
+    }
 }
 
 impl SceneOptions {
+    /// Default of [`max_visits`](Self::max_visits): 10 million.
+    pub const DEFAULT_MAX_VISITS: usize = 10_000_000;
+    /// Default of [`max_path_bytes`](Self::max_path_bytes): 1 GiB.
+    pub const DEFAULT_MAX_PATH_BYTES: usize = 1 << 30;
+
     /// Sets the render origin.
     pub fn with_origin(mut self, origin: Origin) -> Self {
         self.origin = origin;
+        self
+    }
+
+    /// Sets [`max_visits`](Self::max_visits).
+    pub fn with_max_visits(mut self, max_visits: usize) -> Self {
+        self.max_visits = max_visits;
+        self
+    }
+
+    /// Sets [`max_path_bytes`](Self::max_path_bytes).
+    pub fn with_max_path_bytes(mut self, max_path_bytes: usize) -> Self {
+        self.max_path_bytes = max_path_bytes;
         self
     }
 }
@@ -308,6 +364,16 @@ pub enum SceneWarningKind {
     Decode(DecodeError),
     /// Curves of a type that is not drawn yet.
     UnsupportedCurve(UnsupportedCurve),
+    /// The walk reached a limit of [`SceneOptions`] at this path and
+    /// stopped; nodes not visited by then are left out. `option` names the
+    /// field, `max_visits` or `max_path_bytes`, and `limit` its value. The
+    /// warning's `attribute` is empty.
+    LimitReached { option: &'static str, limit: usize },
+    /// Coordinates that the scene's `f32` buffers and render matrices
+    /// cannot hold: a geometry spanning more than `f32::MAX`, or an
+    /// instance placed beyond about 8.5 × 10³⁷ or scaled past `f32::MAX`.
+    /// The geometry or the instance is left out.
+    OutOfRange,
 }
 
 /// A value skipped while building a scene; see the [module docs](self).
@@ -322,7 +388,11 @@ pub struct SceneWarning {
 
 impl fmt::Display for SceneWarning {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}: ", display_path(&self.path), self.attribute)?;
+        write!(f, "{}", display_path(&self.path))?;
+        if !self.attribute.is_empty() {
+            write!(f, " {}", self.attribute)?;
+        }
+        f.write_str(": ")?;
         match &self.kind {
             SceneWarningKind::Decode(e) => {
                 // Some decoders already name the attribute; do not repeat it.
@@ -337,6 +407,14 @@ impl fmt::Display for SceneWarning {
                 }
                 Ok(())
             }
+            SceneWarningKind::LimitReached { option, limit } => {
+                write!(
+                    f,
+                    "scene walk stopped at SceneOptions::{option} = {limit}; \
+                     the rest of the tree is left out"
+                )
+            }
+            SceneWarningKind::OutOfRange => f.write_str("coordinates out of f32 range; left out"),
         }
     }
 }
@@ -401,7 +479,7 @@ impl RenderScene {
     /// attributes, including a transform, apply like those of any node.
     pub fn from_root(root: &ComposedNode, options: &SceneOptions) -> Self {
         let mut builder = Builder::default();
-        builder.walk(root);
+        builder.walk(root, options);
         builder.finish(options)
     }
 
@@ -493,8 +571,26 @@ struct Builder {
     lines: HashMap<Key, Option<usize>>,
     points: HashMap<Key, Option<(usize, bool)>>,
     materials: HashMap<String, usize>,
-    /// Local `f64` vertices of each buffer, for exact world bounds.
-    local: HashMap<GeometryRef, Vec<Vec3>>,
+    /// Local `f64` vertices of each buffer, for exact world bounds, and the
+    /// attribute id it was decoded from.
+    local: HashMap<GeometryRef, (Vec<Vec3>, &'static str)>,
+}
+
+/// Largest world coordinate magnitude an instance may reach: a quarter of
+/// `f32::MAX`, so that the origin, coordinates relative to it, and their
+/// differences all stay finite in `f32`.
+const MAX_COORDINATE: f64 = f32::MAX as f64 / 4.0;
+
+fn in_range(bounds: &Bounds) -> bool {
+    bounds
+        .min
+        .iter()
+        .chain(&bounds.max)
+        .all(|c| c.abs() <= MAX_COORDINATE)
+}
+
+fn all_finite(values: &[[f32; 3]]) -> bool {
+    values.iter().flatten().all(|v| v.is_finite())
 }
 
 fn key<T>(value: &T) -> Key {
@@ -502,7 +598,14 @@ fn key<T>(value: &T) -> Key {
 }
 
 impl Builder {
-    fn walk(&mut self, root: &ComposedNode) {
+    fn walk(&mut self, root: &ComposedNode, options: &SceneOptions) {
+        // Counted when a node is queued, so the queue is bounded as well.
+        let mut visits = 1usize;
+        let mut path_bytes = 0usize;
+        if options.max_visits == 0 {
+            self.limit_reached("", "max_visits", 0);
+            return;
+        }
         let mut stack: Vec<(&ComposedNode, String, Context)> = vec![(
             root,
             String::new(),
@@ -547,6 +650,21 @@ impl Builder {
                 self.instance(&path, node, GeometryRef::Points(points), material, &context);
             }
             for (name, child) in node.children.iter().rev() {
+                visits += 1;
+                if visits > options.max_visits {
+                    self.limit_reached(&path, "max_visits", options.max_visits);
+                    return;
+                }
+                // Checked before the path is built, so a limit also bounds
+                // the largest single allocation.
+                path_bytes = path_bytes
+                    .saturating_add(path.len())
+                    .saturating_add(name.len())
+                    .saturating_add(1);
+                if path_bytes > options.max_path_bytes {
+                    self.limit_reached(&path, "max_path_bytes", options.max_path_bytes);
+                    return;
+                }
                 let child_path = if path.is_empty() {
                     name.clone()
                 } else {
@@ -588,6 +706,28 @@ impl Builder {
                 materials.push(material);
                 materials.len() - 1
             })
+    }
+
+    /// `buffer`, unless its anchored `f32` positions overflow, which only
+    /// coordinates spanning more than `f32::MAX` do; that is a warning.
+    fn fits<B>(
+        &mut self,
+        buffer: Option<B>,
+        path: &str,
+        attribute: &'static str,
+        positions: impl Fn(&B) -> &[[f32; 3]],
+    ) -> Option<B> {
+        let buffer = buffer?;
+        if all_finite(positions(&buffer)) {
+            Some(buffer)
+        } else {
+            self.warn(path, attribute, SceneWarningKind::OutOfRange);
+            None
+        }
+    }
+
+    fn limit_reached(&mut self, path: &str, option: &'static str, limit: usize) {
+        self.warn(path, "", SceneWarningKind::LimitReached { option, limit });
     }
 
     fn warn(&mut self, path: &str, attribute: &'static str, kind: SceneWarningKind) {
@@ -655,12 +795,15 @@ impl Builder {
             return *id;
         }
         let id = match TriangleMesh::from_attribute(value) {
-            Ok(mesh) => mesh_buffer(&mesh).map(|buffer| {
-                self.scene.meshes.push(buffer);
-                let id = self.scene.meshes.len() - 1;
-                self.local.insert(GeometryRef::Mesh(id), mesh.positions);
-                id
-            }),
+            Ok(mesh) => self
+                .fits(mesh_buffer(&mesh), path, mesh::ATTRIBUTE, |b| &b.positions)
+                .map(|buffer| {
+                    self.scene.meshes.push(buffer);
+                    let id = self.scene.meshes.len() - 1;
+                    self.local
+                        .insert(GeometryRef::Mesh(id), (mesh.positions, mesh::ATTRIBUTE));
+                    id
+                }),
             Err(e) => {
                 self.warn(path, mesh::ATTRIBUTE, SceneWarningKind::Decode(e));
                 None
@@ -675,13 +818,18 @@ impl Builder {
             return *id;
         }
         let id = match CurveGeometry::from_attribute(value) {
-            Ok(CurveGeometry::Polylines(polylines)) => line_buffer(&polylines).map(|buffer| {
-                self.scene.lines.push(buffer);
-                let id = self.scene.lines.len() - 1;
-                let local = polylines.into_iter().flat_map(|l| l.points).collect();
-                self.local.insert(GeometryRef::Lines(id), local);
-                id
-            }),
+            Ok(CurveGeometry::Polylines(polylines)) => self
+                .fits(line_buffer(&polylines), path, curves::ATTRIBUTE, |b| {
+                    &b.positions
+                })
+                .map(|buffer| {
+                    self.scene.lines.push(buffer);
+                    let id = self.scene.lines.len() - 1;
+                    let local = polylines.into_iter().flat_map(|l| l.points).collect();
+                    self.local
+                        .insert(GeometryRef::Lines(id), (local, curves::ATTRIBUTE));
+                    id
+                }),
             Ok(CurveGeometry::Unsupported(curve)) => {
                 self.warn(
                     path,
@@ -716,13 +864,15 @@ impl Builder {
         let entry = match decoded {
             Ok(mut cloud) => {
                 let buffer = point_buffer(&mut cloud);
+                let buffer = self.fits(buffer, path, id, |b| &b.positions);
                 let positions = cloud.positions;
                 buffer.map(|buffer| {
                     let colored = buffer.colors.is_some();
                     self.scene.points.push(buffer);
-                    let id = self.scene.points.len() - 1;
-                    self.local.insert(GeometryRef::Points(id), positions);
-                    (id, colored)
+                    let index = self.scene.points.len() - 1;
+                    self.local
+                        .insert(GeometryRef::Points(index), (positions, id));
+                    (index, colored)
                 })
             }
             Err(e) => {
@@ -736,36 +886,57 @@ impl Builder {
 
     fn finish(mut self, options: &SceneOptions) -> RenderScene {
         let mut scene = std::mem::take(&mut self.scene);
+        let out_of_range = |instance: &Instance, attribute| SceneWarning {
+            path: instance.path.clone(),
+            attribute,
+            kind: SceneWarningKind::OutOfRange,
+        };
+
+        // World bounds first: an instance placed beyond MAX_COORDINATE,
+        // with a transform that overflows f64, or with a rotation and scale
+        // part that overflows f32 (the render matrix keeps that part as it
+        // is) is left out before it can move the origin.
         let mut world_bounds: Option<Bounds> = None;
-        let mut instance_bounds = Vec::with_capacity(scene.instances.len());
-        for instance in &scene.instances {
-            let positions = &self.local[&instance.geometry];
+        let mut instances = Vec::with_capacity(scene.instances.len());
+        for mut instance in std::mem::take(&mut scene.instances) {
+            let (positions, attribute) = &self.local[&instance.geometry];
             let bounds =
                 Bounds::from_points(positions.iter().map(|&p| instance.world.transform_point(p)))
                     .expect("empty buffers are never instanced");
-            world_bounds = Some(world_bounds.map_or(bounds, |b| b.union(&bounds)));
-            instance_bounds.push(bounds);
+            let linear = instance.world.rows()[..3].iter().flat_map(|row| &row[..3]);
+            if in_range(&bounds) && linear.into_iter().all(|v| v.abs() <= f64::from(f32::MAX)) {
+                world_bounds = Some(world_bounds.map_or(bounds, |b| b.union(&bounds)));
+                instance.bounds = bounds;
+                instances.push(instance);
+            } else {
+                scene.warnings.push(out_of_range(&instance, attribute));
+            }
         }
-        scene.bounds = world_bounds;
         scene.origin = match options.origin {
             Origin::Auto => world_bounds.map_or([0.0; 3], |b| b.center()),
             Origin::At(origin) => origin,
         };
+
+        // Then the f32 render matrix. Its translation can still overflow in
+        // contrived cases; those instances are left out as well, after the
+        // origin was chosen.
         let shift = Transform::from_translation(scene.origin.map(|c| -c));
-        let anchors: Vec<Vec3> = scene
-            .instances
-            .iter()
-            .map(|i| scene.anchor(i.geometry))
-            .collect();
-        for ((instance, bounds), anchor) in
-            scene.instances.iter_mut().zip(instance_bounds).zip(anchors)
-        {
-            let render = Transform::from_translation(anchor)
+        let mut world_bounds: Option<Bounds> = None;
+        for mut instance in instances {
+            let render = Transform::from_translation(scene.anchor(instance.geometry))
                 .then(&instance.world)
                 .then(&shift);
             instance.matrix = render.to_column_major().map(|v| v as f32);
-            instance.bounds = bounds;
+            if instance.matrix.iter().all(|v| v.is_finite()) {
+                let bounds = instance.bounds;
+                world_bounds = Some(world_bounds.map_or(bounds, |b| b.union(&bounds)));
+                scene.instances.push(instance);
+            } else {
+                let attribute = self.local[&instance.geometry].1;
+                scene.warnings.push(out_of_range(&instance, attribute));
+            }
         }
+        scene.bounds = world_bounds;
         scene
     }
 }

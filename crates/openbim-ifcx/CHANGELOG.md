@@ -43,6 +43,15 @@ functions and types keep their signatures.
 - To validate a file with its imports, build its layer stack and call
   `stack.validate()` instead of `file.validate()`.
 
+### Fixed
+
+- `IfcxFile::validate` and `validate_attributes` walk schema `inherits`
+  with an explicit stack and check each inherited schema once per value.
+  A long inheritance chain overflowed the stack, and diamond-shaped
+  inheritance doubled the work per level (22 levels took seconds and
+  reported one failure four million times); a schema reached along several
+  paths now reports its failures once. Found while fuzzing (#41).
+
 ## [0.1.0] - 2026-10-03
 
 First release: lossless reading and writing, layer flattening and

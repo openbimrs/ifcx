@@ -1,0 +1,85 @@
+# cargo-fuzz targets for openbim-ifcx and openbim-ifcx-geometry.
+#
+# Not a member of the root workspace and not part of the MSRV gate:
+# libFuzzer needs a nightly toolchain (see rust-toolchain.toml here and
+# CONTRIBUTING.md, "Fuzzing").
+[package]
+name = "openbim-ifcx-fuzz"
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "1", features = ["derive"] }
+base64 = "0.23"
+libfuzzer-sys = "0.4"
+openbim-ifcx = { path = "../crates/openbim-ifcx" }
+openbim-ifcx-geometry = { path = "../crates/openbim-ifcx-geometry" }
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+
+# Its own workspace, so the root workspace never builds it.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "read"
+path = "fuzz_targets/read.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "compose"
+path = "fuzz_targets/compose.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "validate"
+path = "fuzz_targets/validate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pcd"
+path = "fuzz_targets/pcd.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pcd_lzf"
+path = "fuzz_targets/pcd_lzf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "points_base64"
+path = "fuzz_targets/points_base64.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "geometry"
+path = "fuzz_targets/geometry.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "scene_glb"
+path = "fuzz_targets/scene_glb.rs"
+test = false
+doc = false
+bench = false

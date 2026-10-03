@@ -1,0 +1,13 @@
+# .PCD v0.7 - fuzz seed
+VERSION 0.7
+FIELDS rgb x y z
+SIZE 4 4 4 4
+TYPE F F F F
+COUNT 1 1 1 1
+WIDTH 2
+HEIGHT 1
+VIEWPOINT 0 0 0 1 0 0 0
+POINTS 2
+DATA ascii
+4.2108e+06 1 2 3
+0 4 5 6

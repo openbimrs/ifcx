@@ -326,3 +326,128 @@ fn empty_composition_gives_an_empty_scene() {
     assert_eq!(scene.bounds, None);
     assert_eq!(scene.origin, [0.0; 3]);
 }
+
+/// `levels` nodes that each name the next twice as children, the last with
+/// a triangle: 2^levels paths reach the triangle.
+fn doubling(levels: usize, name: &str) -> Composition {
+    let mut nodes = Vec::new();
+    for i in 0..levels {
+        let next = format!("n{}", i + 1);
+        nodes.push(serde_json::json!({
+            "path": format!("n{i}"),
+            "children": {format!("{name}a"): next, format!("{name}b"): next},
+        }));
+    }
+    nodes.push(serde_json::json!({
+        "path": format!("n{levels}"),
+        "attributes": {"usd::usdgeom::mesh": {
+            "points": [[0, 0, 0], [1, 0, 0], [0, 1, 0]], "faceVertexIndices": [0, 1, 2]}},
+    }));
+    let nodes: Vec<openbim_ifcx::IfcxNode> = serde_json::from_value(nodes.into()).unwrap();
+    compose(&flatten(&nodes)).unwrap()
+}
+
+fn limit_warning(scene: &RenderScene) -> (&str, usize) {
+    let warning = scene.warnings.last().expect("a limit warning");
+    assert_eq!(warning.attribute, "");
+    match warning.kind {
+        SceneWarningKind::LimitReached { option, limit } => (option, limit),
+        ref other => panic!("expected a limit warning, got {other:?}"),
+    }
+}
+
+/// Found while fuzzing (#41): composition shares sub-trees, so 40 nodes
+/// describe 2^40 paths, and the walk visited every one of them.
+#[test]
+fn exponential_paths_stop_at_max_visits() {
+    let composition = doubling(40, "c");
+    let options = SceneOptions::default().with_max_visits(10_000);
+    let scene = RenderScene::from_composition(&composition, &options);
+    assert_eq!(limit_warning(&scene), ("max_visits", 10_000));
+    assert_eq!(scene.warnings.len(), 1);
+    assert!(!scene.instances.is_empty() && scene.instances.len() < 10_000);
+    assert_eq!(
+        scene.meshes.len(),
+        1,
+        "the shared mesh is still stored once"
+    );
+    assert!(scene.warnings[0].to_string().contains("max_visits = 10000"));
+}
+
+/// Found while fuzzing (#41): instance paths of deep trees with long child
+/// names grow with depth squared.
+#[test]
+fn long_paths_stop_at_max_path_bytes() {
+    let composition = doubling(3, &"x".repeat(1000));
+    let unlimited = RenderScene::from_composition(&composition, &SceneOptions::default());
+    assert_eq!(unlimited.instances.len(), 8);
+    assert!(unlimited.warnings.is_empty());
+
+    let options = SceneOptions::default().with_max_path_bytes(10_000);
+    let scene = RenderScene::from_composition(&composition, &options);
+    assert_eq!(limit_warning(&scene), ("max_path_bytes", 10_000));
+    assert!(scene.instances.len() < 8);
+    let built: usize = scene.instances.iter().map(|i| i.path.len()).sum();
+    assert!(built <= 10_000);
+}
+
+#[test]
+fn default_limits() {
+    let options = SceneOptions::default();
+    assert_eq!(options.max_visits, 10_000_000);
+    assert_eq!(options.max_path_bytes, 1 << 30);
+    let scene = RenderScene::from_composition(&doubling(2, "c"), &options.with_max_visits(0));
+    assert!(scene.instances.is_empty());
+    assert_eq!(limit_warning(&scene), ("max_visits", 0));
+}
+
+fn scene_of(nodes: serde_json::Value) -> RenderScene {
+    let nodes: Vec<openbim_ifcx::IfcxNode> = serde_json::from_value(nodes).unwrap();
+    RenderScene::from_composition(
+        &compose(&flatten(&nodes)).unwrap(),
+        &SceneOptions::default(),
+    )
+}
+
+fn translated(x: f64) -> serde_json::Value {
+    serde_json::json!({"transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [x, 0, 0, 1]]})
+}
+
+fn scaled(s: f64) -> serde_json::Value {
+    serde_json::json!({"transform": [[s, 0, 0, 0], [0, s, 0, 0], [0, 0, s, 0], [0, 0, 0, 1]]})
+}
+
+/// Found by fuzzing (#41, target `scene_glb`): coordinates beyond `f32`
+/// became infinite render matrices, buffers, and origins, which GLB wrote
+/// as `null`.
+#[test]
+fn coordinates_beyond_f32_are_left_out_with_a_warning() {
+    let triangle = serde_json::json!({
+        "points": [[0, 0, 0], [1, 0, 0], [0, 1, 0]], "faceVertexIndices": [0, 1, 2]});
+    let tiny = serde_json::json!({
+        "points": [[0, 0, 0], [1e-30, 0, 0], [0, 1e-30, 0]], "faceVertexIndices": [0, 1, 2]});
+    let huge = serde_json::json!({
+        "points": [[0, 0, 0], [1e39, 0, 0], [0, 1, 0]], "faceVertexIndices": [0, 1, 2]});
+    let scene = scene_of(serde_json::json!([
+        {"path": "ok", "attributes": {"usd::xformop": translated(5.0), "usd::usdgeom::mesh": triangle}},
+        {"path": "far", "attributes": {"usd::xformop": translated(5e299), "usd::usdgeom::mesh": triangle}},
+        {"path": "wide", "attributes": {"usd::usdgeom::mesh": huge}},
+        {"path": "blown-up", "attributes": {"usd::xformop": scaled(1e39), "usd::usdgeom::mesh": tiny}},
+    ]));
+    let paths: Vec<_> = scene.instances.iter().map(|i| i.path.as_str()).collect();
+    assert_eq!(paths, ["ok"]);
+    let warned: Vec<_> = scene
+        .warnings
+        .iter()
+        .map(|w| {
+            assert_eq!(w.kind, SceneWarningKind::OutOfRange);
+            assert_eq!(w.attribute, mesh::ATTRIBUTE);
+            w.path.as_str()
+        })
+        .collect();
+    assert_eq!(warned, ["wide", "far", "blown-up"]);
+    assert_eq!(scene.origin, [5.5, 0.5, 0.0]);
+    let bounds = scene.bounds.unwrap();
+    assert_eq!((bounds.min, bounds.max), ([5.0, 0.0, 0.0], [6.0, 1.0, 0.0]));
+    assert!(scene.instances[0].matrix.iter().all(|v| v.is_finite()));
+}

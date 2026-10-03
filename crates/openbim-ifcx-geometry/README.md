@@ -13,7 +13,7 @@ Implemented for the `ifcx_alpha` draft:
 | `points` | `points::array`, `points::base64`, `pcd::base64` | `PointCloud`: positions and optional linear RGB colours; PCD `ascii`, `binary`, `binary_compressed` |
 | `presentation` | `usd::usdgeom::visibility`, `bsi::ifc::presentation::*`, `gltf::material` | `NodePresentation` per node; `is_visible`, `resolve_basic_material`, `resolve_mesh_material` apply the reference viewer's precedence over a node's ancestors |
 | `glb` | a `RenderScene` | `to_glb`: one binary glTF 2.0 file with shared meshes, `LINES`, `POINTS` (with `COLOR_0`), PBR materials, node names set to IFCX paths, and the origin and Z-up to Y-up rotation on a root node |
-| `scene` | all of the above, over a composed tree | `RenderScene::from_composition`: instances (node path for picking, `f64` world transform, `f32` render matrix, material), shared `f32` mesh, line, and point buffers stored once per shared attribute value, a material table, `f64` world bounds, a render origin, and per-value warnings |
+| `scene` | all of the above, over a composed tree | `RenderScene::from_composition`: instances (node path for picking, `f64` world transform, `f32` render matrix, material), shared `f32` mesh, line, and point buffers stored once per shared attribute value, a material table, `f64` world bounds, a render origin, and per-value warnings; the walk is bounded by `SceneOptions::max_visits` and `max_path_bytes`, and coordinates outside `f32` range are left out with a warning |
 
 Each decoder takes an attribute's `serde_json::Value` and returns a typed
 `DecodeError` for malformed input. Coordinates are `f64` because IFCX files

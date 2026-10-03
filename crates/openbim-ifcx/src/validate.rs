@@ -27,6 +27,9 @@
 //!
 //! A value description with `inherits` is first checked against the value
 //! description of every inherited schema, then against its own `dataType`.
+//! A schema reached through several `inherits` paths (a diamond) is checked
+//! once per value, so its failures are reported once. Inheritance is walked
+//! without recursion, so chains of any length are checked.
 //! `optional` only lets an object key be absent; a JSON `null` is never
 //! accepted where a value is present. `quantityKind` is not checked.
 //!
@@ -63,6 +66,7 @@
 //! `federate` does, against the attributes of every layer, merged per path as
 //! flattening does.
 
+use std::collections::HashSet;
 use std::error::Error;
 use std::fmt;
 
@@ -344,12 +348,12 @@ where
                 node: path,
                 attribute: id,
                 pointer: String::new(),
-                inheriting: Vec::new(),
+                inheriting: HashSet::new(),
                 failures: &mut report.failures,
             };
             match schemas.get_key_value(id) {
                 Some((key, schema)) => {
-                    checker.inheriting.push(key);
+                    checker.inheriting.insert(key);
                     checker.check(&schema.value, value);
                 }
                 None => checker.fail(FailureKind::MissingSchema),
@@ -443,7 +447,7 @@ struct Checker<'s, 'r> {
     pointer: String,
     /// Schema ids whose value description is being checked through
     /// `inherits`, to stop cycles.
-    inheriting: Vec<&'s str>,
+    inheriting: HashSet<&'s str>,
     failures: &'r mut Vec<ValidationFailure>,
 }
 
@@ -479,21 +483,44 @@ impl<'s> Checker<'s, '_> {
         self.pointer.truncate(len);
     }
 
+    /// Checks `value` against every schema `desc` inherits, each before the
+    /// schemas inheriting it, then against `desc` itself.
+    ///
+    /// The inheritance graph is walked with an explicit stack, so a long
+    /// chain cannot overflow the call stack, and each inherited schema is
+    /// checked once per value, so diamond-shaped inheritance stays linear.
     fn check(&mut self, desc: &'s IfcxValueDescription, value: &Value) {
-        for id in desc.inherits.iter().flatten() {
-            let Some((key, schema)) = self.schemas.get_key_value(id) else {
-                self.fail(FailureKind::UnknownInheritedSchema { id: id.clone() });
-                continue;
-            };
-            if self.inheriting.contains(&key.as_str()) {
-                self.fail(FailureKind::InheritanceCycle { id: id.clone() });
+        // Schemas already checked against this value.
+        let mut done: HashSet<&'s str> = HashSet::new();
+        // (description, its schema id unless it is `desc`, next inherit).
+        let mut stack: Vec<(&'s IfcxValueDescription, Option<&'s str>, usize)> =
+            vec![(desc, None, 0)];
+        while let Some((current, _, next)) = stack.last_mut() {
+            if let Some(id) = current.inherits.as_deref().and_then(|ids| ids.get(*next)) {
+                *next += 1;
+                let Some((key, schema)) = self.schemas.get_key_value(id) else {
+                    self.fail(FailureKind::UnknownInheritedSchema { id: id.clone() });
+                    continue;
+                };
+                if self.inheriting.contains(key.as_str()) {
+                    self.fail(FailureKind::InheritanceCycle { id: id.clone() });
+                } else if !done.contains(key.as_str()) {
+                    self.inheriting.insert(key);
+                    stack.push((&schema.value, Some(key), 0));
+                }
                 continue;
             }
-            self.inheriting.push(key);
-            self.check(&schema.value, value);
-            self.inheriting.pop();
+            let (current, key, _) = stack.pop().expect("stack is not empty");
+            self.check_own(current, value);
+            if let Some(key) = key {
+                self.inheriting.remove(key);
+                done.insert(key);
+            }
         }
+    }
 
+    /// Checks `value` against the `dataType` of `desc` alone.
+    fn check_own(&mut self, desc: &'s IfcxValueDescription, value: &Value) {
         let data_type = &desc.data_type;
         match data_type {
             DataType::Boolean => {
