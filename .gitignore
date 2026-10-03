@@ -11,3 +11,5 @@
 /crates/openbim-ifcx-wasm/pkg/
 __pycache__/
 *.pyc
+/.upstream/
+/.ifcx-mirror/

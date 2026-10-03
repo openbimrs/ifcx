@@ -16,6 +16,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Weekly upstream drift check (`.github/workflows/upstream-drift.yml`,
+  `scripts/upstream-drift.sh`): runs every opt-in upstream check against
+  buildingSMART/IFC5-development's default branch with an `ifcx.dev` import
+  mirror fetched in the job, compares the results with
+  `scripts/upstream-drift/baseline.txt` (`1a63082`), reports which upstream
+  branches moved since the last run, and opens or updates a single
+  `upstream-drift` issue on failure or difference. Not part of the CI gate
+  (#35).
 - Language bindings: `openbim-ifcx-wasm` (npm `@openbim/ifcx`) and
   `openbim-ifcx-py` (PyPI `openbim-ifcx`) over a shared
   `openbim-ifcx-binding-core`, as in `openbimrs/ifc`.

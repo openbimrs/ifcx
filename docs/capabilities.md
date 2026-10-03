@@ -6,6 +6,14 @@ samples for a named draft revision).
 
 Target draft: `ifcx_alpha` (`schema/ifcx.tsp` in buildingSMART/IFC5-development).
 
+The upstream evidence below was recorded at buildingSMART/IFC5-development
+`1a63082`. It is re-checked against upstream's default branch every week by
+`.github/workflows/upstream-drift.yml`, which runs every opt-in upstream
+check and compares the results with `scripts/upstream-drift/baseline.txt`;
+any failure or changed result opens an `upstream-drift` issue (see
+[CONTRIBUTING.md](../CONTRIBUTING.md#upstream-drift)). A claim here stays
+pinned to the revision it names until it is re-recorded.
+
 | Capability | Status | IFCX draft | Crate | Notes |
 | --- | --- | --- | --- | --- |
 | Read and write an IFCX file losslessly | implemented | `ifcx_alpha` | `openbim-ifcx` | Content round-trips, including unknown fields and `null` deletions. Map keys keep their order; known fields are written in `ifcx.tsp` order. All 47 upstream example files (`1a63082`) round-trip via the opt-in `upstream_round_trip` test |
@@ -63,8 +71,9 @@ pinned esbuild, composes each case with it and with this crate's
 not resolved: every `ifcx_alpha` example imports only schema files, which
 carry no `data`, so they cannot change a composed tree.
 
-Last run: buildingSMART/IFC5-development `1a63082`, draft `ifcx_alpha`,
-59 cases.
+Last recorded: buildingSMART/IFC5-development `1a63082`, draft `ifcx_alpha`,
+59 cases. Re-run weekly against upstream's default branch by the upstream
+drift workflow.
 
 | Cases | Result |
 | --- | --- |
