@@ -1,0 +1,90 @@
+name: Demo
+
+# Builds the demo viewer in demo/ against @openbim/ifcx built from this
+# commit's source (never a published version) and deploys it to GitHub
+# Pages: https://openbimrs.github.io/ifcx/. Pull requests touching it only
+# build it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "demo/**"
+      - "crates/openbim-ifcx/**"
+      - "crates/openbim-ifcx-geometry/**"
+      - "crates/openbim-ifcx-binding-core/**"
+      - "crates/openbim-ifcx-wasm/**"
+      - "Cargo.lock"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "demo/**"
+      - "crates/openbim-ifcx-wasm/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push waits rather than cancelling one
+# that is already deploying.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build demo
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Rust 1.88.0
+        uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
+        with:
+          toolchain: 1.88.0
+          targets: wasm32-unknown-unknown
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install wasm-bindgen CLI
+        # Must equal the `wasm-bindgen` pin in crates/openbim-ifcx-wasm/Cargo.toml.
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: wasm-bindgen-cli@0.2.128
+      - name: Build and test @openbim/ifcx from source
+        # Writes crates/openbim-ifcx-wasm/pkg, which demo/vite.config.js
+        # aliases; the checks include the browser builds in headless Chrome.
+        run: crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh
+      - name: Install demo dependencies
+        working-directory: demo
+        run: npm ci --no-audit --no-fund
+      - name: Build demo
+        working-directory: demo
+        run: npm run build
+      - name: Configure Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: demo/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

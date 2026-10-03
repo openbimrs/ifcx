@@ -1,0 +1,43 @@
+# IFCX demo viewer
+
+**Live:** <https://openbimrs.github.io/ifcx/>
+
+A static page that composes an IFC5 / IFCX file in the browser with
+[`@openbim/ifcx`](../crates/openbim-ifcx-wasm/README.md) (its `web` build),
+exports the composed model as GLB and shows it with three.js.
+
+- Open one or more `.ifcx` files with the file picker or by dropping them on
+  the view; several files are layers, weakest first, and also serve each
+  other's `imports` by file name. Or pick one of the repository's own
+  hand-written fixtures (`crates/openbim-ifcx/tests/fixtures`). No
+  buildingSMART file is hosted, and nothing is fetched from elsewhere unless
+  you turn on *fetch imports*, which resolves `imports` with
+  `fetchImports` relative to the file's URL.
+- The node panel shows the composed tree; a square marks nodes with
+  geometry. Clicking a mesh or a node highlights its geometry and shows its
+  IFCX path, node id and attributes.
+- The validation panel lists every attribute value that fails its schema.
+
+The GLB's root node turns IFCX's Z-up into glTF's Y-up; each instance node
+is named by its IFCX path and carries the node id in `extras.ifcxNode`
+(three.js `userData.ifcxNode`). The model is exported with
+`originOnRoot: false`, centred on the origin, so georeferenced coordinates
+do not cost precision.
+
+## Build
+
+The demo uses the package as built from this repository, not from npm:
+`vite.config.js` aliases `@openbim/ifcx/web` to
+`crates/openbim-ifcx-wasm/pkg` (or `$IFCX_WASM_PKG`).
+
+```sh
+crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh   # builds and tests pkg/
+cd demo
+npm ci
+npm run dev       # or: npm run build && npm run preview
+```
+
+Versions are pinned in `package.json` and `package-lock.json` (three.js,
+Vite). `.github/workflows/pages.yml` builds the demo the same way and
+deploys `demo/dist` to GitHub Pages on pushes to `main` that touch the demo,
+the wasm crate or the crates it builds on.

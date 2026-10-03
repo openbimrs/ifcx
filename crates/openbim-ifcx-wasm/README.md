@@ -10,6 +10,9 @@ bundlers (webpack, Rollup) and plain browser pages, with TypeScript
 declarations for each. Every build is tested from the packed tarball,
 the browser builds in headless Chrome.
 
+Try it in the browser: the [demo viewer](https://openbimrs.github.io/ifcx/)
+composes a file with this package and shows the GLB with three.js.
+
 Targets the `ifcx_alpha` draft of buildingSMART's IFC5. IFCX is still a
 moving draft; see the
 [capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md).

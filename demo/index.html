@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IFCX viewer</title>
+    <meta name="description" content="Compose an IFC5 / IFCX file in the browser with @openbim/ifcx, export GLB and view it with three.js." />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>IFCX viewer</h1>
+      <p class="tagline">
+        Composes IFC5 / IFCX in your browser with
+        <a href="https://www.npmjs.com/package/@openbim/ifcx">@openbim/ifcx</a>
+        (WebAssembly), exports GLB and shows it with three.js. Files stay on your machine.
+      </p>
+      <div class="controls">
+        <label class="button" for="file">Open .ifcx…</label>
+        <input id="file" type="file" accept=".ifcx,.json,application/json" multiple hidden />
+        <label>Sample
+          <select id="sample">
+            <option value="">choose…</option>
+          </select>
+        </label>
+        <label title="Fetch the files that `imports` names over the network, relative to the file's URL. Off: imports are not resolved, unless you open the imported files together.">
+          <input id="fetch-imports" type="checkbox" /> fetch imports
+        </label>
+        <span id="status" role="status">Loading the WebAssembly module…</span>
+      </div>
+    </header>
+    <main>
+      <aside id="tree-panel">
+        <h2>Nodes</h2>
+        <div id="tree" class="tree"><p class="hint">Open a file to see its composed tree.</p></div>
+      </aside>
+      <section id="viewport" aria-label="3D view">
+        <div id="drop-hint">Drop .ifcx files here. Several files are layers, weakest first.</div>
+      </section>
+      <aside id="info-panel">
+        <h2>Selection</h2>
+        <div id="selection"><p class="hint">Click a mesh or a node.</p></div>
+        <h2>Validation</h2>
+        <div id="validation"><p class="hint">Nothing validated yet.</p></div>
+      </aside>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
