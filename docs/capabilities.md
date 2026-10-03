@@ -10,7 +10,7 @@ Target draft: `ifcx_alpha` (`schema/ifcx.tsp` in buildingSMART/IFC5-development)
 | --- | --- | --- | --- | --- |
 | Read and write an IFCX file losslessly | implemented | `ifcx_alpha` | `openbim-ifcx` | Content round-trips, including unknown fields and `null` deletions. Map keys keep their order; known fields are written in `ifcx.tsp` order. All 47 upstream example files (`1a63082`) round-trip via the opt-in `upstream_round_trip` test |
 | Compose layers into a resolved node tree | reserved | — | `openbim-ifcx` | |
-| Check attributes against the file's `schemas` | reserved | — | `openbim-ifcx` | |
+| Check attributes against the file's `schemas` | implemented | `ifcx_alpha` | `openbim-ifcx` | Rules of upstream `schema-validation.ts` (`1a63082`), collecting every failure with node path, attribute id, and JSON pointer. Stricter than upstream for `Integer` fractions, array `min`/`max`, and non-object `Object` values; `Blob` is accepted unchecked, unknown `dataType`s are reported, `quantityKind` is not checked. All 47 upstream examples validate via the opt-in `upstream_validation` test when their imported schema files are supplied |
 | Resolve imports | reserved | — | `openbim-ifcx` | Through a caller-supplied resolver; no built-in network access |
 | World transforms through the node hierarchy | reserved | — | `openbim-ifcx-geometry` | `usd::xformop::transform` |
 | Triangle meshes | reserved | — | `openbim-ifcx-geometry` | `usd::usdgeom::mesh` |
