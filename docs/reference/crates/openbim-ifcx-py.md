@@ -8,9 +8,9 @@ editLink: false
 
 Python bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from Python.
 
-| Crate | `openbim-ifcx-py` 0.1.1 on `main` |
+| Crate | `openbim-ifcx-py` 0.1.2 on `main` |
 | --- | --- |
-| Latest release | 0.1.1 (2026-10-03) |
+| Latest release | 0.1.2 (2026-10-03) |
 | Distributed as | [PyPI `openbim-ifcx`](https://pypi.org/project/openbim-ifcx/) |
 | Install | `pip install openbim-ifcx` |
 | Requires | Python `>=3.9` |
@@ -180,20 +180,18 @@ One IFCX file.
 
 ## Changes
 
-Unreleased, on `main`:
+Latest release, 0.1.2 (2026-10-03):
 
 #### Changed
+
+- Built on `openbim-ifcx` 0.1.1 and `openbim-ifcx-geometry` 0.1.1:
+  validation with imports checks every layer against the schemas of all
+  layers, flattening and composition no longer copy attribute values, and
+  the fuzzing fixes apply (deep schema inheritance, oversized coordinates,
+  exponential scene walks, malformed PCD headers).
 
 - The README, which is the PyPI page, links the documentation site
   (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
   <https://openbimrs.github.io/ifcx/viewer/> (#64).
-
-Latest release, 0.1.1 (2026-10-03):
-
-#### Fixed
-
-- The source distribution carries `LICENSE` at its root, where its metadata
-  names it. PyPI rejected the 0.1.0 sdist for the missing file, so 0.1.0 is
-  available as wheels only.
 
 Full history: [`crates/openbim-ifcx-py/CHANGELOG.md`](https://github.com/openbimrs/ifcx/blob/main/crates/openbim-ifcx-py/CHANGELOG.md), and every release of every crate on the [project changelog](/project/changelog).

@@ -8,9 +8,9 @@ editLink: false
 
 WebAssembly bindings for openbim-ifcx: read, write, validate, compose and export IFC5 / IFCX files from JavaScript.
 
-| Crate | `openbim-ifcx-wasm` 0.2.0 on `main` |
+| Crate | `openbim-ifcx-wasm` 0.2.1 on `main` |
 | --- | --- |
-| Latest release | 0.2.0 (2026-10-03) |
+| Latest release | 0.2.1 (2026-10-03) |
 | Distributed as | [npm `@openbim/ifcx`](https://www.npmjs.com/package/@openbim/ifcx) |
 | Install | `npm install @openbim/ifcx` |
 | Requires | Node `>=18`, or a current browser |
@@ -281,43 +281,18 @@ MIT, like the rest of `openbimrs/ifcx`.
 
 ## Changes
 
-Unreleased, on `main`:
+Latest release, 0.2.1 (2026-10-03):
 
 #### Changed
+
+- Built on `openbim-ifcx` 0.1.1 and `openbim-ifcx-geometry` 0.1.1:
+  validation with imports checks every layer against the schemas of all
+  layers, flattening and composition no longer copy attribute values, and
+  the fuzzing fixes apply (deep schema inheritance, oversized coordinates,
+  exponential scene walks, malformed PCD headers).
 
 - The README, which is the npm page, links the documentation site
   (<https://openbimrs.github.io/ifcx/>) and the viewer at its new address,
   <https://openbimrs.github.io/ifcx/viewer/> (#64).
-
-Latest release, 0.2.0 (2026-10-03):
-
-#### Added
-
-- Browser builds in the same npm package (#46): next to the Node CommonJS
-  build, `bundler/` (`wasm-bindgen --target bundler`, the default export
-  for bundlers such as webpack) and `web/` (`--target web`, imported as
-  `@openbim/ifcx/web`, with an async `init()` that loads the wasm module).
-  `package.json` `exports` selects the build (`node` condition: CommonJS;
-  otherwise the bundler build), with TypeScript declarations for each.
-  The Node API and entry point are unchanged.
-- `fetchImports(layers, { baseUrl, fetch, imports, signal })`: resolves
-  the layers' imports recursively in JavaScript with `fetch` (or any
-  function returning a `Response`, bytes or text) and returns them keyed
-  by import `uri` for the existing in-memory `imports` option. The Rust
-  crates still perform no network access (ADR 0002). A file that cannot be
-  fetched rejects with an `IfcxError` with the new code `fetch`.
-- `scripts/build-npm-pkg.sh` (was `build-node-pkg.sh`) binds all three
-  targets, runs the Node suite, and `tools/check-package.mjs` checks the
-  packed tarball: Node `require` and `import`, a webpack bundle (webpack
-  pinned in `tools/package-lock.json`), and both browser builds in
-  headless Chrome, parsing, validating, composing, fetching imports and
-  exporting GLB from the repository's fixtures.
-
-#### Changed
-
-- Through `openbim-ifcx-binding-core`: layers with `imports` are stacked by
-  `openbim-ifcx`'s `LayerStackBuilder::build_all`, and composition moves
-  the parsed layers instead of copying them. Layer order, results and
-  reports are unchanged (#42, #43).
 
 Full history: [`crates/openbim-ifcx-wasm/CHANGELOG.md`](https://github.com/openbimrs/ifcx/blob/main/crates/openbim-ifcx-wasm/CHANGELOG.md), and every release of every crate on the [project changelog](/project/changelog).

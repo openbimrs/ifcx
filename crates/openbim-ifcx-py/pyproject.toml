@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "openbim-ifcx"
-version = "0.1.1"
+version = "0.1.2"
 description = "Read, write, validate, compose and export (GLB) IFC5 / IFCX files -- Python bindings for the openbim-ifcx Rust crate."
 readme = "README.md"
 license = { text = "MIT" }

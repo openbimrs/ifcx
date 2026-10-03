@@ -8,10 +8,10 @@ latest release recorded on `main`.
 
 | Language | Package | Latest release | Install | Requires | Reference |
 | --- | --- | --- | --- | --- | --- |
-| Rust | [`openbim-ifcx`](https://crates.io/crates/openbim-ifcx) | 0.1.0 (2026-10-03) | `cargo add openbim-ifcx` | Rust `1.88.0` | [`openbim-ifcx`](/reference/crates/openbim-ifcx) |
-| Rust | [`openbim-ifcx-geometry`](https://crates.io/crates/openbim-ifcx-geometry) | 0.1.0 (2026-10-03) | `cargo add openbim-ifcx-geometry` | Rust `1.88.0` | [`openbim-ifcx-geometry`](/reference/crates/openbim-ifcx-geometry) |
-| Python | [`openbim-ifcx`](https://pypi.org/project/openbim-ifcx/) | 0.1.1 (2026-10-03) | `pip install openbim-ifcx` | Python `>=3.9` | [`openbim-ifcx-py`](/reference/crates/openbim-ifcx-py) |
-| JavaScript / TypeScript | [`@openbim/ifcx`](https://www.npmjs.com/package/@openbim/ifcx) | 0.2.0 (2026-10-03) | `npm install @openbim/ifcx` | Node `>=18`, or a current browser | [`openbim-ifcx-wasm`](/reference/crates/openbim-ifcx-wasm) |
+| Rust | [`openbim-ifcx`](https://crates.io/crates/openbim-ifcx) | 0.1.1 (2026-10-03) | `cargo add openbim-ifcx` | Rust `1.88.0` | [`openbim-ifcx`](/reference/crates/openbim-ifcx) |
+| Rust | [`openbim-ifcx-geometry`](https://crates.io/crates/openbim-ifcx-geometry) | 0.1.1 (2026-10-03) | `cargo add openbim-ifcx-geometry` | Rust `1.88.0` | [`openbim-ifcx-geometry`](/reference/crates/openbim-ifcx-geometry) |
+| Python | [`openbim-ifcx`](https://pypi.org/project/openbim-ifcx/) | 0.1.2 (2026-10-03) | `pip install openbim-ifcx` | Python `>=3.9` | [`openbim-ifcx-py`](/reference/crates/openbim-ifcx-py) |
+| JavaScript / TypeScript | [`@openbim/ifcx`](https://www.npmjs.com/package/@openbim/ifcx) | 0.2.1 (2026-10-03) | `npm install @openbim/ifcx` | Node `>=18`, or a current browser | [`openbim-ifcx-wasm`](/reference/crates/openbim-ifcx-wasm) |
 
 <!-- INSTALL:TABLE:END -->
 
