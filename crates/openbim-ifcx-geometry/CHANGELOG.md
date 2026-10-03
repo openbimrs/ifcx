@@ -11,6 +11,13 @@ repository.
 
 ### Added
 
+- `openbim-ifcx-geometry` writes a `RenderScene` as binary glTF 2.0
+  (`to_glb`, `GlbOptions`, `GlbError`): shared meshes per buffer and
+  material, `TRIANGLES`, `LINES`, and `POINTS` with `COLOR_0`, PBR
+  materials, node names set to IFCX paths, and a root node with the scene
+  origin and the Z-up to Y-up rotation. The `ifcx2glb` example converts IFCX
+  layers to `.glb`; the opt-in `scripts/gltf-validate.sh` checks exports with
+  the Khronos glTF validator (#9).
 - `openbim-ifcx-geometry` builds a flat render scene from a composition
   (`RenderScene::from_composition`, `from_root`): instances with node path,
   world transform, `f32` render matrix, material, and bounds; shared `f32`

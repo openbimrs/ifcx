@@ -3,14 +3,14 @@
 This repository owns the OpenBIM.rs implementation of IFC5 / IFCX. The
 lossless file model, layer composition (flattening and the composed tree),
 attribute validation, import resolution (`layers`), the transform, mesh,
-curve, point-cloud, and presentation attribute decoders, and the flat render
-scene are implemented. Do not describe GLB export as implemented without
-executable evidence here.
+curve, point-cloud, and presentation attribute decoders, the flat render
+scene, and GLB export are implemented. Do not describe a capability as
+implemented without executable evidence here.
 
 ## Map
 
 - `crates/openbim-ifcx/` — file model, JSON read/write, composition (`src/compose/`), attribute validation (`src/validate.rs`), layer stacks (`src/layers/`, features `integrity` and `fs`)
-- `crates/openbim-ifcx-geometry/` — per-node attribute decoders (transforms, meshes, curves, point clouds in `points.rs`, presentation in `presentation.rs`) and the flat render scene (`scene.rs`); GLB planned; depends on the core crate, never on a renderer
+- `crates/openbim-ifcx-geometry/` — per-node attribute decoders (transforms, meshes, curves, point clouds in `points.rs`, presentation in `presentation.rs`) the flat render scene (`scene.rs`), and GLB export (`glb.rs`, example `ifcx2glb`); depends on the core crate, never on a renderer
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
 - `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases; see CONTRIBUTING.md
@@ -31,6 +31,10 @@ IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_DIR=../ifcx-imports \
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx --test upstream_composition -- --nocapture
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx-geometry --test upstream_decode
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx-geometry --test upstream_scene -- --nocapture
+# Khronos glTF validator over exported GLBs (installs gltf-validator into scripts/gltf/node_modules)
+IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/gltf-validate.sh
+# convert for a glTF viewer
+cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- in.ifcx out.glb
 # also needs an offline mirror of the ifcx.dev files, laid out as <host>/<path>
 IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_MIRROR=../ifcx-mirror \
     cargo test --release -p openbim-ifcx --features fs --test upstream_layers -- --nocapture

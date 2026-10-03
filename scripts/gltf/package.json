@@ -1,0 +1,10 @@
+{
+  "name": "openbim-ifcx-gltf-validation",
+  "private": true,
+  "description": "Opt-in Khronos glTF validation of exported GLB files; see ../gltf-validate.sh",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "gltf-validator": "2.0.0-dev.3.10"
+  }
+}

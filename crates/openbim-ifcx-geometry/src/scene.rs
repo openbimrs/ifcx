@@ -324,7 +324,12 @@ impl fmt::Display for SceneWarning {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}: ", display_path(&self.path), self.attribute)?;
         match &self.kind {
-            SceneWarningKind::Decode(e) => write!(f, "{e}"),
+            SceneWarningKind::Decode(e) => {
+                // Some decoders already name the attribute; do not repeat it.
+                let message = e.to_string();
+                let prefix = format!("{}: ", self.attribute);
+                write!(f, "{}", message.strip_prefix(&prefix).unwrap_or(&message))
+            }
             SceneWarningKind::UnsupportedCurve(c) => {
                 write!(f, "curve type {:?} is not supported", c.curve_type)?;
                 if let Some(basis) = &c.basis {
