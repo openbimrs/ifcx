@@ -16,7 +16,7 @@ categories = ["graphics", "rendering::data-formats"]
 publish = false
 
 [dependencies]
-openbim-ifcx = { path = "../openbim-ifcx", version = "0.0.0" }
+openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.0" }
 # Decodes `points::base64` and `pcd::base64`. Without default features: no
 # std and none of its SIMD (unsafe) engines, only the scalar decoder.
 base64 = { version = "0.23", default-features = false, features = ["alloc"] }

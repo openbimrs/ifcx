@@ -1,6 +1,6 @@
 [package]
 name = "openbim-ifcx"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"
@@ -12,8 +12,6 @@ readme = "README.md"
 description = "Lossless reader and writer for IFC5 / IFCX files, the layered JSON model."
 keywords = ["bim", "openbim", "ifc", "ifc5", "ifcx"]
 categories = ["parser-implementations"]
-# Not published until composition exists; see docs/capabilities.md.
-publish = false
 
 [dependencies]
 indexmap = { version = "2", features = ["serde"] }

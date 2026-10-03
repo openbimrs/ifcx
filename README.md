@@ -22,7 +22,7 @@ authoritative list of what exists.
 
 | Crate | Role | Published |
 | --- | --- | --- |
-| `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | no |
+| `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | crates.io from 0.1.0 |
 | `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export planned | no |
 
 ## Development
