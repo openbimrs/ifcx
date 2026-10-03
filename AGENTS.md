@@ -1,12 +1,13 @@
 # IFCX repository instructions
 
-This repository owns the OpenBIM.rs implementation of IFC5 / IFCX. Only the
-lossless file model is implemented. Do not describe composition, imports,
-validation, or geometry as implemented without executable evidence here.
+This repository owns the OpenBIM.rs implementation of IFC5 / IFCX. The
+lossless file model and attribute validation are implemented. Do not describe
+composition, imports, or geometry as implemented without executable evidence
+here.
 
 ## Map
 
-- `crates/openbim-ifcx/` — file model and JSON read/write; composition planned
+- `crates/openbim-ifcx/` — file model, JSON read/write, attribute validation (`src/validate.rs`); composition planned
 - `crates/openbim-ifcx-geometry/` — planned geometry and viewer helpers; depends on the core crate, never on a renderer
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
@@ -20,6 +21,9 @@ validation, or geometry as implemented without executable evidence here.
 cargo test --workspace
 # opt-in, needs a local buildingSMART/IFC5-development checkout
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx --test upstream_round_trip
+# also needs the imported schema files from ifcx.dev, named by URI's last segment
+IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_DIR=../ifcx-imports \
+    cargo test --release -p openbim-ifcx --test upstream_validation
 ```
 
 Trust command exit codes. Never summarize a Cargo pipeline in a way that hides

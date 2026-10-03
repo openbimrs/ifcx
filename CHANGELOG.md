@@ -12,6 +12,13 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`IfcxFile::from_json_*`, `to_json_*`): typed header, imports, schemas, and
   nodes; unknown fields kept at every level; `null` children and inherits
   preserved; read errors report kind, line, and column (#12).
+- `openbim-ifcx` checks attribute values against the file's `schemas`
+  (`IfcxFile::validate`, `validate_attributes`, `validate_nodes`), following
+  upstream's `schema-validation.ts` but reporting every failure with node
+  path, attribute id, and JSON pointer in a `ValidationReport`. `Integer`
+  rejects fractions and array `min`/`max` are enforced, unlike upstream;
+  `Blob` values are accepted unchecked and `quantityKind` is not checked
+  (#16).
 
 - Repository scaffold: `openbim-ifcx` crate with a status constant only,
   verification gate, pinned CI, and Dependabot for action pins.

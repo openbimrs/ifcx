@@ -1,0 +1,86 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/valid-attributes",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03T12:00:00Z"
+  },
+  "imports": [],
+  "schemas": {
+    "example::point": {
+      "value": {
+        "dataType": "Object",
+        "objectRestrictions": {
+          "values": {
+            "x": { "dataType": "Real", "quantityKind": "Length" },
+            "y": { "dataType": "Real", "quantityKind": "Length" }
+          }
+        }
+      }
+    },
+    "example::label": {
+      "value": {
+        "dataType": "Object",
+        "inherits": ["example::point"],
+        "objectRestrictions": {
+          "values": {
+            "text": { "dataType": "String" },
+            "size": { "dataType": "Real", "optional": true }
+          }
+        }
+      }
+    },
+    "example::height": { "value": { "dataType": "Real", "quantityKind": "Length" } },
+    "example::storeys": { "value": { "dataType": "Integer" } },
+    "example::loadBearing": { "value": { "dataType": "Boolean" } },
+    "example::name": { "value": { "dataType": "String" } },
+    "example::built": { "value": { "dataType": "DateTime" } },
+    "example::status": {
+      "value": { "dataType": "Enum", "enumRestrictions": { "options": ["NEW", "EXISTING", "DEMOLISH"] } }
+    },
+    "example::host": { "value": { "dataType": "Reference" } },
+    "example::thumbnail": { "value": { "dataType": "Blob" } },
+    "example::outline": {
+      "value": {
+        "dataType": "Array",
+        "arrayRestrictions": {
+          "min": 3,
+          "value": {
+            "dataType": "Array",
+            "arrayRestrictions": { "min": 2, "max": 2, "value": { "dataType": "Real" } }
+          }
+        }
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "site",
+      "children": { "Building": "building" },
+      "attributes": {
+        "example::name": "Site",
+        "__internal_note": "skipped by validation"
+      }
+    },
+    {
+      "path": "building",
+      "attributes": {
+        "example::height": 12.5,
+        "example::storeys": 4,
+        "example::loadBearing": true,
+        "example::name": "Building A",
+        "example::built": "2026-10-03",
+        "example::status": "NEW",
+        "example::host": "site",
+        "example::thumbnail": "iVBORw0KGgo=",
+        "example::outline": [[0, 0], [20, 0], [20, 10.5], [0, 10.5]],
+        "example::label": { "x": 10, "y": 5.25, "text": "A" }
+      }
+    },
+    {
+      "path": "building",
+      "attributes": { "example::storeys": 5.0 }
+    }
+  ]
+}
