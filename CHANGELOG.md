@@ -11,6 +11,17 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `openbim-ifcx` flattens layered nodes by path in layer order
   (`flatten`, `FlatNode`), matching upstream `FlattenCompositionInput`;
   attribute values are shared through `Arc` (#13).
+- `openbim-ifcx::layers` resolves `imports` for `ifcx_alpha` through a
+  caller-supplied `LayerResolver`: `LayerStackBuilder` loads the main layer
+  and its imports once each in upstream order, `LayerStack::federate` merges
+  schemas and data in that order, and typed `LayerError`s report missing
+  layers, import cycles, unreadable layers, and `integrity` mismatches.
+  `MemoryResolver` serves layers from memory; `FsResolver` (feature `fs`)
+  reads local files and maps URI prefixes to offline mirrors. `integrity` is
+  checked as SRI-style `sha256`/`sha384`/`sha512` digests (feature
+  `integrity`, default on; without it such imports are rejected). In upstream
+  order an import overrides the layer importing it; see
+  `docs/capabilities.md` (#15).
 - `openbim-ifcx` reads and writes `ifcx_alpha` files losslessly
   (`IfcxFile::from_json_*`, `to_json_*`): typed header, imports, schemas, and
   nodes; unknown fields kept at every level; `null` children and inherits

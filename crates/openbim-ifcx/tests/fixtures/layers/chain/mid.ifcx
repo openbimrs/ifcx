@@ -1,0 +1,42 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layers/chain/mid",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [
+    {
+      "uri": "sub/base.ifcx",
+      "integrity": "sha256-banE308tp+Ekaz+sBmsEBvCEfEgy80oUURH2xS80g+8="
+    }
+  ],
+  "schemas": {
+    "demo::fire": {
+      "value": {
+        "dataType": "String"
+      }
+    },
+    "demo::thickness": {
+      "value": {
+        "dataType": "Real"
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "wall",
+      "attributes": {
+        "demo::fire": "EI60",
+        "demo::thickness": 0.2
+      }
+    },
+    {
+      "path": "storey",
+      "children": {
+        "Door": null
+      }
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 # IFCX repository instructions
 
 This repository owns the OpenBIM.rs implementation of IFC5 / IFCX. The
-lossless file model, flattening by path, attribute validation, and the
-transform, mesh, and curve attribute decoders are implemented. Do not
-describe the composed tree, imports, the render scene, or GLB export as
-implemented without executable evidence here.
+lossless file model, flattening by path, attribute validation, import
+resolution (`layers`), and the transform, mesh, and curve attribute decoders
+are implemented. Do not describe the composed tree, the render scene, or GLB
+export as implemented without executable evidence here.
 
 ## Map
 
-- `crates/openbim-ifcx/` — file model, JSON read/write, flattening (`src/compose/`), attribute validation (`src/validate.rs`); composed tree planned
+- `crates/openbim-ifcx/` — file model, JSON read/write, flattening (`src/compose/`), attribute validation (`src/validate.rs`), layer stacks (`src/layers/`, features `integrity` and `fs`); composed tree planned
 - `crates/openbim-ifcx-geometry/` — geometry attribute decoders; render scene and GLB planned; depends on the core crate, never on a renderer
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
@@ -26,6 +26,9 @@ IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx --tes
 IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_DIR=../ifcx-imports \
     cargo test --release -p openbim-ifcx --test upstream_validation
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx-geometry --test upstream_decode
+# also needs an offline mirror of the ifcx.dev files, laid out as <host>/<path>
+IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_MIRROR=../ifcx-mirror \
+    cargo test --release -p openbim-ifcx --features fs --test upstream_layers -- --nocapture
 ```
 
 Trust command exit codes. Never summarize a Cargo pipeline in a way that hides

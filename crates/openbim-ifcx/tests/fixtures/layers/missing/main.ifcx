@@ -1,0 +1,16 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layers/missing/main",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [
+    {
+      "uri": "absent.ifcx"
+    }
+  ],
+  "schemas": {},
+  "data": []
+}

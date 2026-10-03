@@ -1,0 +1,41 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/layers/chain/main",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [
+    {
+      "uri": "mid.ifcx"
+    }
+  ],
+  "schemas": {
+    "demo::fire": {
+      "value": {
+        "dataType": "String"
+      }
+    },
+    "demo::name": {
+      "value": {
+        "dataType": "String"
+      }
+    }
+  },
+  "data": [
+    {
+      "path": "wall",
+      "attributes": {
+        "demo::fire": "EI30",
+        "demo::name": "Wall 1"
+      }
+    },
+    {
+      "path": "site",
+      "children": {
+        "Storey": "storey"
+      }
+    }
+  ]
+}
