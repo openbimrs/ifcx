@@ -7,7 +7,8 @@
 # the one to run before a merge. CI runs each section as its own parallel job
 # and passes only when all of them pass, so the union is identical:
 #
-#   rust      formatting, check, tests, clippy, rustdoc, packaging
+#   rust      formatting, check, tests, clippy, rustdoc, generated docs,
+#             the docs site build, packaging
 #   bindings  JavaScript and Python bindings, built and tested as shipped
 set -euo pipefail
 
@@ -21,6 +22,32 @@ gate_rust() {
     cargo test -p openbim-ifcx --no-default-features
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
+
+    # Documentation. Every generated docs file and region (crate reference
+    # pages, the assembled changelog, the install table, the ADR index, the
+    # upstream evidence, the contributing pages, the README crate table)
+    # must equal what `cargo run -p xtask -- docs` writes, so changing a
+    # manifest, README, changelog, ADR or binding surface without
+    # regenerating fails here. Reads the Python API with python3's `ast`.
+    cargo run --quiet --locked -p xtask -- docs --check
+    # Every unfinished-work marker names its issue, as `TODO(#N)`.
+    cargo run --quiet --locked -p xtask -- todo --check
+    # No buildingSMART file or text is committed (scripts/check-leakage.py;
+    # the Pages workflow runs it on the built site against upstream).
+    python3 scripts/check-leakage.py
+    # The site build resolves every link and checks the diagrams. It needs
+    # the docs toolchain (`npm ci` at the root, which CI runs); without
+    # node_modules it is skipped so the gate still runs without Node.
+    if [[ -d node_modules ]]; then
+        local log
+        log=$(mktemp)
+        npm run --silent docs:build >"$log" 2>&1 \
+            || { echo "docs build failed:" >&2; tail -30 "$log" >&2; rm -f "$log"; exit 1; }
+        rm -f "$log"
+        echo "docs build ok"
+    else
+        echo "warning: no node_modules; docs site build NOT run (npm ci first)" >&2
+    fi
     # Every publishable crate must package and build from its .crate alone.
     cargo package --locked -p openbim-ifcx
     cargo package --locked -p openbim-ifcx-geometry

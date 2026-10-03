@@ -39,11 +39,17 @@ jobs:
       - name: Set up Node
         # bindings runs the Node suite and the npm package check, whose
         # webpack comes pinned from crates/openbim-ifcx-wasm/tools and whose
-        # headless Chrome is the one the hosted ubuntu image ships.
-        if: matrix.section == 'bindings'
+        # headless Chrome is the one the hosted ubuntu image ships; rust
+        # builds the docs site.
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "20"
+      - name: Install docs toolchain
+        # Without node_modules gate.sh skips the docs site build, so a dead
+        # link or a broken diagram would only surface after merge, in the
+        # Pages workflow.
+        if: matrix.section == 'rust'
+        run: npm ci --no-audit --no-fund
       - name: Install wasm-bindgen CLI
         # Must equal the `wasm-bindgen` pin in crates/openbim-ifcx-wasm/Cargo.toml;
         # build-npm-pkg.sh refuses a mismatch.

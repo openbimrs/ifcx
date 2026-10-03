@@ -16,3 +16,7 @@ __pycache__/
 *.pyc
 /.upstream/
 /.ifcx-mirror/
+# Documentation site: npm dependencies and VitePress build output.
+/node_modules/
+/docs/.vitepress/dist/
+/docs/.vitepress/cache/

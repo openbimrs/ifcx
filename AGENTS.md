@@ -15,6 +15,10 @@ implemented without executable evidence here.
 - `crates/openbim-ifcx-wasm/` — JavaScript binding, npm `@openbim/ifcx` (`npm/package.json`, `scripts/build-npm-pkg.sh`, `js/fetch-imports.js`, `tests/js/`, `tools/check-package.mjs`); `publish = false` on crates.io
 - `crates/openbim-ifcx-py/` — Python binding, PyPI `openbim-ifcx` (`pyproject.toml`, `python/openbim_ifcx/`, `scripts/check-python.sh`, `tests/python/`); `publish = false` on crates.io
 - `demo/` — static three.js demo viewer over the `web` build of `@openbim/ifcx` built from source (Vite, pinned, `package-lock.json`); deployed to GitHub Pages by `.github/workflows/pages.yml`
+- `docs/` — VitePress documentation site (<https://openbimrs.github.io/ifcx/>): `.vitepress/config.ts`, theme, guides, ADRs, capabilities; `docs/reference/`, `docs/project/`, `docs/guide/viewer.md` and every `<!-- NAME:BEGIN -->` region are generated, never edited by hand (CONTRIBUTING.md#documentation)
+- `xtask/` — repository tooling, `publish = false`: `cargo run -p xtask -- docs [--check]` generates the docs from manifests, READMEs, changelogs, sources and binding declarations; `todo [--check]` requires `TODO(#N)`
+- `package.json`, `package-lock.json` — pinned docs toolchain (VitePress, Mermaid)
+- `scripts/check-leakage.py` — no buildingSMART file or text in the source tree (gate) or the built site (Pages, against upstream)
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
 - `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases to crates.io, npm (`openbim-ifcx-wasm`), and PyPI (`openbim-ifcx-py`) by trusted publishing; see CONTRIBUTING.md
@@ -28,6 +32,8 @@ implemented without executable evidence here.
 
 ```bash
 ./scripts/gate.sh
+cargo run -p xtask -- docs          # regenerate the generated docs; the gate runs --check
+npm ci && npm run docs:dev          # preview the docs site (no rustdoc, no viewer)
 ./scripts/gate.sh rust          # one section; `bindings` needs wasm-bindgen-cli 0.2.128, node, uv, maturin
 cargo test --workspace
 crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh    # npm package (Node, bundler, web) + Node suite + headless-browser check
@@ -101,4 +107,9 @@ changed summary line opens, or updates, the single open issue labelled
 
 IFCX is still a moving draft. Keep the capability table honest and name the
 draft revision for each claim. Update README, rustdoc, capabilities, and
-CHANGELOG together for user-visible changes.
+CHANGELOG together for user-visible changes, then run
+`cargo run -p xtask -- docs` and commit what it regenerates: the crate
+reference pages embed each crate's README, public API and changelog, so a
+README or changelog edit without regenerating fails the gate. Guide code
+lives in the `guide` tests of each crate, imported by `#region`; edit it
+there. Never publish buildingSMART files or texts on the site.

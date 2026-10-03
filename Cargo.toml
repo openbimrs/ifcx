@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["crates/*"]
+# xtask is repository tooling (`publish = false`), never released.
+members = ["crates/*", "xtask"]
 
 [profile.release]
 opt-level = 3

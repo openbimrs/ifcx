@@ -37,6 +37,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Workspace members that are repository tooling, never released anywhere.
+TOOLING = {"xtask"}
+
+
+def refuse_tooling(crate: str) -> int:
+    if crate in TOOLING:
+        print(f"{crate} is repository tooling (publish = false) and is never released",
+              file=sys.stderr)
+        return 1
+    return 0
+
 
 def metadata() -> dict:
     out = subprocess.run(
@@ -312,6 +323,8 @@ def plan(tag: str) -> int:
         print(f"not a release tag: {tag}", file=sys.stderr)
         return 1
     crate, version = match["crate"], match["version"]
+    if refuse_tooling(crate):
+        return 1
     package = next((p for p in metadata()["packages"] if p["name"] == crate), None)
     if package is None:
         print(f"{tag}: {crate} is not a workspace member", file=sys.stderr)
@@ -424,6 +437,8 @@ def main() -> int:
 
     if args.plan:
         return plan(args.crate)
+    if refuse_tooling(args.crate):
+        return 1
     if args.publish_here:
         return publish_here(args.crate)
     if args.publish:

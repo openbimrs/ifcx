@@ -47,7 +47,7 @@ impl std::error::Error for IntegrityError {}
 /// Checks `bytes` against an import's `integrity` value.
 ///
 /// The `ifcx_alpha` draft declares `integrity?: string` on an import and
-/// defines no format; upstream's providers leave checking as a TODO and no
+/// defines no format; upstream's providers leave checking as a `TODO` and no
 /// upstream example sets the field. This crate reads it as W3C Subresource
 /// Integrity metadata: one or more whitespace-separated `<alg>-<base64>`
 /// tokens, where `<alg>` is `sha256`, `sha384`, or `sha512` and `<base64>` is

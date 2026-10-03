@@ -1,0 +1,14 @@
+[
+  {
+    "number": "0001",
+    "slug": "0001-ifcx-is-its-own-family",
+    "status": "Accepted",
+    "title": "IFC5 / IFCX is its own standard family"
+  },
+  {
+    "number": "0002",
+    "slug": "0002-crate-split-by-dependency-weight",
+    "status": "Accepted",
+    "title": "Split crates by dependency weight, not by concept"
+  }
+]

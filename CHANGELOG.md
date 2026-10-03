@@ -16,6 +16,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Documentation site (VitePress) for <https://openbimrs.github.io/ifcx/>:
+  home, install and getting-started guides for Rust, JavaScript and
+  Python whose code runs in the gate, one reference page per crate,
+  capabilities, upstream parity and drift evidence, ADRs, the assembled
+  changelog, contributing and releasing. `xtask` (`publish = false`)
+  generates every derivable page and region from the manifests, READMEs,
+  changelogs, sources and binding declarations;
+  `cargo run -p xtask -- docs --check`, `todo --check`, the site build
+  and `scripts/check-leakage.py` run in the gate's `rust` section (#64).
 - The demo viewer works on phones: a compact top bar, a 3D view that fills
   the screen, nodes and details in a bottom sheet behind tabs, touch
   orbit and tap-to-pick, and framing that fits portrait screens (#62).
