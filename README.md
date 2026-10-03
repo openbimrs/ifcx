@@ -11,18 +11,19 @@ rejects the `IFC5` schema token. See
 
 ## Status
 
-**Early.** Single files read and write losslessly, layered nodes flatten by
-path, attributes are checked against the file's `schemas`, and transform,
-mesh, curve, point-cloud, and presentation attributes decode per node. The
-composed node tree, imports, the render scene, and GLB export are not
+**Early.** Single files read and write losslessly, layers flatten and compose
+into a resolved node tree, imports resolve through a caller-supplied
+resolver, attributes are checked against the file's `schemas`, and a
+composed tree turns into a flat render scene of transformed, instanced
+meshes, lines, and point clouds with resolved materials. GLB export is not
 implemented, and no crate is published.
 [`docs/capabilities.md`](docs/capabilities.md) is the
 authoritative list of what exists.
 
 | Crate | Role | Published |
 | --- | --- | --- |
-| `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening, attribute validation; composed tree planned | no |
-| `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; render scene and GLB export planned | no |
+| `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | no |
+| `openbim-ifcx-geometry` | Transform, mesh, curve, point-cloud, and presentation decoders; flat render scene; GLB export planned | no |
 
 ## Development
 

@@ -1,0 +1,38 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx-geometry/fixtures/georeferenced",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [],
+  "schemas": {},
+  "data": [
+    {
+      "path": "terrain",
+      "children": {"Surface": "surface", "Survey": "survey"}
+    },
+    {
+      "path": "surface",
+      "attributes": {
+        "usd::usdgeom::mesh": {
+          "points": [
+            [512000.001, 5612000.002, 101.5],
+            [512010.004, 5612000.002, 101.5],
+            [512010.004, 5612010.007, 102.25],
+            [512000.001, 5612010.007, 102.25]
+          ],
+          "faceVertexIndices": [0, 1, 2, 0, 2, 3]
+        }
+      }
+    },
+    {
+      "path": "survey",
+      "attributes": {
+        "usd::xformop": {"transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [512000, 5612000, 100, 1]]},
+        "usd::usdgeom::basiscurves": {"points": [[0.001, 0.002, 0], [10.004, 10.007, 0]]}
+      }
+    }
+  ]
+}
