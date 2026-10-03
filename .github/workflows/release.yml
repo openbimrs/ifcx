@@ -1,0 +1,148 @@
+# Publish one crate to crates.io when its release tag is pushed. Ported from
+# openbimrs/ifc. `scripts/release-crate.py <crate> --publish` creates and
+# pushes the tag; see CONTRIBUTING.md#releasing-a-crate.
+#
+#   <crate>-v<version>  ->  crates.io (unless publish = false)
+#
+# crates.io uses trusted publishing (OIDC). The publish job runs in the
+# `crates.io` environment, and crates.io trusts exactly this file name and
+# that environment, so renaming either breaks publishing until the crate
+# settings follow. crates.io falls back to the CARGO_REGISTRY_TOKEN secret of
+# the `crates.io` environment for crates not yet configured there, which
+# includes every crate's first publish.
+#
+# Run it by hand (Actions -> Release -> Run workflow) with a tag name to
+# rehearse a release: everything is built and tested, nothing is published.
+# The gate itself is CI's: the plan job requires CI to have passed on the
+# commit rather than running scripts/gate.sh a second time.
+name: Release
+
+on:
+  push:
+    tags:
+      - "*-v[0-9]*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to rehearse, e.g. openbim-ifcx-v0.1.0 (checks only)"
+        required: true
+
+# Never cancel a release halfway.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Plan and gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # read CI's verdict on the tagged commit
+    outputs:
+      crate: ${{ steps.plan.outputs.crate }}
+      version: ${{ steps.plan.outputs.version }}
+      crates_io: ${{ steps.plan.outputs.crates_io }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Require the tag to be on main
+        # A tag on an unmerged branch would publish code main never gated.
+        # A rehearsal checks the dispatched ref the same way.
+        run: |
+          git fetch --quiet origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "::error::$GITHUB_REF_NAME is not on main"; exit 1; }
+      - name: Install Rust 1.88
+        uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
+        with:
+          toolchain: 1.88.0
+      - name: Resolve registries
+        id: plan
+        env:
+          TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+        run: python3 scripts/release-crate.py "$TAG" --plan | tee -a "$GITHUB_OUTPUT"
+      - name: Require CI to have passed on this commit
+        # The full gate (scripts/gate.sh) already runs in CI on every push,
+        # including this tag's, on this exact commit -- running it again here
+        # cost 13 minutes and proved nothing new. Instead, wait for a CI run
+        # of `.github/workflows/ci.yml` on this commit and require its
+        # verdict. Only `push` runs count: they test the commit itself, while
+        # a pull_request run tests a merge with its base. The commit is on
+        # main (checked above), so CI ran main's workflow and gate.sh.
+        # Re-running a failed CI run and then this job picks up the new result.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 120); do
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push" \
+              --jq '.workflow_runs[] | "\(.id) \(.status) \(.conclusion)"')"
+            if grep -q ' completed success$' <<<"$runs"; then
+              echo "CI passed on $GITHUB_SHA:"; echo "$runs"; exit 0
+            fi
+            if [ -n "$runs" ] && ! grep -qv ' completed ' <<<"$runs"; then
+              echo "::error::CI did not pass on $GITHUB_SHA; re-run it, then re-run this workflow"
+              echo "$runs"; exit 1
+            fi
+            echo "waiting for CI on $GITHUB_SHA: ${runs:-no run yet}"
+            sleep 30
+          done
+          echo "::error::no finished CI run on $GITHUB_SHA after 60 minutes"; exit 1
+
+  crates-io:
+    name: Publish to crates.io
+    needs: plan
+    if: needs.plan.outputs.crates_io == 'true' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: crates.io
+      url: https://crates.io/crates/${{ needs.plan.outputs.crate }}/${{ needs.plan.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write # crates.io trusted publishing (OIDC)
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Rust 1.88
+        uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
+        with:
+          toolchain: 1.88.0
+      - name: Authenticate with crates.io (trusted publishing)
+        # A short-lived token, revoked when the job ends. crates.io issues
+        # it when ANY crate trusts this workflow and the `crates.io`
+        # environment, but it only works for those crates, so a token can
+        # exist and still be refused for the crate being released.
+        id: auth
+        continue-on-error: true
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+      - name: Publish
+        # --publish-here skips a version that is already live, so the
+        # fallback retry with the long-lived secret is safe: it can only
+        # publish what the trusted-publishing attempt did not. The fallback
+        # goes away when CARGO_REGISTRY_TOKEN is deleted.
+        env:
+          CRATE: ${{ needs.plan.outputs.crate }}
+          OIDC_TOKEN: ${{ steps.auth.outputs.token }}
+          FALLBACK_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -n "$OIDC_TOKEN" ] && CARGO_REGISTRY_TOKEN="$OIDC_TOKEN" \
+              python3 scripts/release-crate.py "$CRATE" --publish-here; then
+            exit 0
+          fi
+          if [ -z "$FALLBACK_TOKEN" ]; then
+            # A first release published by hand (`--publish --local`) also
+            # pushes the tag; without a token this still succeeds when the
+            # version is already live, and fails otherwise.
+            if CARGO_REGISTRY_TOKEN= python3 scripts/release-crate.py "$CRATE" --publish-here; then
+              exit 0
+            fi
+            echo "::error::trusted publishing failed for $CRATE and no CARGO_REGISTRY_TOKEN fallback is set"
+            exit 1
+          fi
+          echo "::warning::$CRATE is not publishable via crates.io trusted publishing; used CARGO_REGISTRY_TOKEN"
+          CARGO_REGISTRY_TOKEN="$FALLBACK_TOKEN" python3 scripts/release-crate.py "$CRATE" --publish-here

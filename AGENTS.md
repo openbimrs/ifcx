@@ -13,9 +13,10 @@ executable evidence here.
 - `crates/openbim-ifcx-geometry/` — per-node attribute decoders (transforms, meshes, curves, point clouds in `points.rs`, presentation in `presentation.rs`) and the flat render scene (`scene.rs`); GLB planned; depends on the core crate, never on a renderer
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
+- `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases; see CONTRIBUTING.md
 - `scripts/gate.sh` — complete local/CI verification gate
 - `scripts/upstream-parity.sh`, `scripts/parity/` — opt-in composition parity check against upstream's TypeScript; never vendors upstream code
-- `CHANGELOG.md` — user-visible changes using Keep a Changelog
+- `CHANGELOG.md` — repository-level changes; each crate keeps its own `CHANGELOG.md`
 
 ## Commands
 

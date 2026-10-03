@@ -1,0 +1,49 @@
+# Changelog -- openbim-ifcx-geometry
+
+All notable changes to the `openbim-ifcx-geometry` crate are documented here.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this crate follows Semantic Versioning independently of its siblings:
+a release here does not imply a release of any other crate in this
+repository.
+
+## [Unreleased]
+
+### Added
+
+- `openbim-ifcx-geometry` builds a flat render scene from a composition
+  (`RenderScene::from_composition`, `from_root`): instances with node path,
+  world transform, `f32` render matrix, material, and bounds; shared `f32`
+  mesh (with vertex normals), line, and point buffers decoded once per shared
+  attribute value and instanced; a material table; `f64` world bounds; and a
+  render origin (`SceneOptions`, `Origin`) that keeps georeferenced models
+  precise. Invisible subtrees are left out, materials resolve through
+  ancestors, and malformed values become `SceneWarning`s. This completes
+  world transforms through the hierarchy (#3) and presentation resolution
+  (#7) (#8).
+- `openbim-ifcx-geometry` decodes `ifcx_alpha` geometry attributes:
+  `usd::xformop` into an affine `Transform` (USD row-vector layout, `f64`)
+  with `world_from_parent` for hierarchy composition (#3, tree walk pending);
+  `usd::usdgeom::mesh` into a `TriangleMesh` with face normals (#4); and
+  `usd::usdgeom::basiscurves` into polylines, with non-linear curve types
+  reported as unsupported (#5). Malformed values return a typed
+  `DecodeError`.
+- `openbim-ifcx-geometry` decodes point clouds per node from
+  `points::array`, `points::base64`, and `pcd::base64` (PCD `ascii`,
+  `binary`, `binary_compressed`) into `PointCloud` with `f64` positions and
+  optional linear RGB colours. Malformed base64 or PCD returns
+  `DecodeError::InvalidBase64`, `ByteLength`, or `InvalidPcd`; PCD layouts
+  upstream cannot read either return `UnsupportedPcd` (#6).
+- `openbim-ifcx-geometry` decodes visibility, `diffuseColor`, `opacity`, and
+  `gltf::material` per node (`NodePresentation`) and resolves visibility and
+  materials over a node's ancestors with the reference viewer's precedence
+  (`is_visible`, `resolve_basic_material`, `resolve_mesh_material`) (#7).
+- `openbim-ifcx-geometry` `Attributes` trait reads attributes from an
+  `IfcxNode`, `FlatNode`, `ComposedNode`, or a plain map, treating `null` as
+  absent.
+- `openbim-ifcx-geometry` scaffold for renderer-neutral geometry, viewer
+  helpers, and GLB export.
+
+### Removed
+
+- `openbim_ifcx_geometry::PACKAGE_STATUS`, replaced by the decoders.

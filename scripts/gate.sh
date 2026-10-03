@@ -11,3 +11,5 @@ cargo test --workspace --all-features
 cargo test -p openbim-ifcx --no-default-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
+# Every publishable crate must package and build from its .crate alone.
+cargo package --locked -p openbim-ifcx
