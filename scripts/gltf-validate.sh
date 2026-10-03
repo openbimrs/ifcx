@@ -5,7 +5,8 @@
 #   ./scripts/gltf-validate.sh
 #   IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/gltf-validate.sh
 #
-# Exports the hand-written fixtures of openbim-ifcx-geometry and, with
+# Exports the hand-written fixtures of openbim-ifcx-geometry (with their
+# relative imports resolved) and, with
 # IFCX_UPSTREAM_DIR, every example of a local buildingSMART/IFC5-development
 # checkout (a file that does not compose alone is composed on top of the
 # other files of its example folder). GLB files go to target/gltf/.
@@ -29,8 +30,9 @@ out=target/gltf
 rm -rf "$out"
 mkdir -p "$out/fixtures" "$out/upstream"
 
+# Fixtures may import other fixtures by relative path (imports-panel-type).
 for f in crates/openbim-ifcx-geometry/tests/fixtures/*.ifcx; do
-  "$convert" "$f" "$out/fixtures/$(basename "${f%.ifcx}").glb" 2>/dev/null
+  "$convert" --resolve-imports "$f" "$out/fixtures/$(basename "${f%.ifcx}").glb" >/dev/null
 done
 
 if [ -n "${IFCX_UPSTREAM_DIR:-}" ]; then
@@ -44,7 +46,8 @@ if [ -n "${IFCX_UPSTREAM_DIR:-}" ]; then
       while IFS= read -r -d '' other; do
         [ "$other" != "$f" ] && layers+=("$other")
       done < <(find "$folder" -name '*.ifcx' -print0 | sort -z)
-      "$convert" "${layers[@]}" "$f" "$glb" 2>/dev/null
+      "$convert" "${layers[@]}" "$f" "$glb" >/dev/null \
+        || { echo "cannot export $rel, alone or on its folder" >&2; exit 1; }
     fi
   done < <(find "$examples" -name '*.ifcx' -print0 | sort -z)
 fi
