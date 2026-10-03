@@ -9,6 +9,8 @@ repository.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-03
+
 ### Added
 
 - Browser builds in the same npm package (#46): next to the Node CommonJS
@@ -31,6 +33,13 @@ repository.
   headless Chrome, parsing, validating, composing, fetching imports and
   exporting GLB from the repository's fixtures.
 
+### Changed
+
+- Through `openbim-ifcx-binding-core`: layers with `imports` are stacked by
+  `openbim-ifcx`'s `LayerStackBuilder::build_all`, and composition moves
+  the parsed layers instead of copying them. Layer order, results and
+  reports are unchanged (#42, #43).
+
 ## [0.1.0] - 2026-10-03
 
 First version, for npm as `@openbim/ifcx` (`publish = false` on crates.io).
@@ -49,5 +58,6 @@ First version, for npm as `@openbim/ifcx` (`publish = false` on crates.io).
 - `scripts/build-node-pkg.sh` builds the package with the pinned
   `wasm-bindgen` CLI and runs the Node suite against it.
 
-[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-wasm-v0.1.0...HEAD
+[Unreleased]: https://github.com/openbimrs/ifcx/compare/openbim-ifcx-wasm-v0.2.0...HEAD
+[0.2.0]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-wasm-v0.2.0
 [0.1.0]: https://github.com/openbimrs/ifcx/releases/tag/openbim-ifcx-wasm-v0.1.0
