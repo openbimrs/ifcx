@@ -16,6 +16,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `demo/`: a static three.js viewer (Vite, pinned versions and lockfile)
+  that composes `.ifcx` files in the browser with `@openbim/ifcx` built
+  from source, exports GLB, and shows the node tree, picked meshes' IFCX
+  paths and attributes, and validation failures. Samples are the
+  repository's own fixtures. `.github/workflows/pages.yml` deploys it to
+  <https://openbimrs.github.io/ifcx/> (#47).
+
 - The `bindings` gate section and CI also check `@openbim/ifcx` as packed,
   including its browser builds in headless Chrome
   (`crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh`, #46).

@@ -14,6 +14,7 @@ implemented without executable evidence here.
 - `crates/openbim-ifcx-binding-core/` — host-independent core of the bindings (`Document`, `LayerSet`, `BindingError` codes); JSON text to the hosts; `publish = false`
 - `crates/openbim-ifcx-wasm/` — JavaScript binding, npm `@openbim/ifcx` (`npm/package.json`, `scripts/build-npm-pkg.sh`, `js/fetch-imports.js`, `tests/js/`, `tools/check-package.mjs`); `publish = false` on crates.io
 - `crates/openbim-ifcx-py/` — Python binding, PyPI `openbim-ifcx` (`pyproject.toml`, `python/openbim_ifcx/`, `scripts/check-python.sh`, `tests/python/`); `publish = false` on crates.io
+- `demo/` — static three.js demo viewer over the `web` build of `@openbim/ifcx` built from source (Vite, pinned, `package-lock.json`); deployed to GitHub Pages by `.github/workflows/pages.yml`
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
 - `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases to crates.io, npm (`openbim-ifcx-wasm`), and PyPI (`openbim-ifcx-py`) by trusted publishing; see CONTRIBUTING.md

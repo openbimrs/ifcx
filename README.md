@@ -22,6 +22,11 @@ JavaScript and Python bindings to npm and PyPI, each through
 [`docs/capabilities.md`](docs/capabilities.md) is the
 authoritative list of what exists.
 
+**Demo:** [openbimrs.github.io/ifcx](https://openbimrs.github.io/ifcx/)
+composes an `.ifcx` file in your browser with `@openbim/ifcx`, exports GLB
+and shows it with three.js, with the node tree, picked attributes and
+validation failures ([`demo/`](demo/README.md)).
+
 | Crate | Role | Published |
 | --- | --- | --- |
 | `openbim-ifcx` | IFCX file model, lossless JSON read/write, flattening and composition, import resolution, attribute validation | crates.io from 0.1.0 |

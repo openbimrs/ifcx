@@ -10,6 +10,8 @@
 /scripts/gltf/node_modules/
 /crates/openbim-ifcx-wasm/pkg/
 /crates/openbim-ifcx-wasm/tools/node_modules/
+/demo/node_modules/
+/demo/dist/
 __pycache__/
 *.pyc
 /.upstream/

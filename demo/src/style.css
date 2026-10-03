@@ -1,0 +1,283 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1d2330;
+  --muted: #5d6677;
+  --border: #d9dde4;
+  --accent: #1f6feb;
+  --accent-soft: #e3edfd;
+  --bad: #b42318;
+  --bad-soft: #fdecea;
+  --good: #1a7f37;
+  --viewport: #e9ecf1;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b;
+    --panel: #1a1e26;
+    --text: #e4e7ec;
+    --muted: #9aa3b2;
+    --border: #2d3340;
+    --accent: #58a6ff;
+    --accent-soft: #1c2d47;
+    --bad: #ff7b72;
+    --bad-soft: #3a1d1d;
+    --good: #56d364;
+    --viewport: #1f242d;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: var(--accent);
+}
+
+header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.tagline {
+  margin: 2px 0 8px;
+  color: var(--muted);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.button {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+select {
+  margin-left: 4px;
+  font: inherit;
+}
+
+#status {
+  color: var(--muted);
+}
+
+#status.error {
+  color: var(--bad);
+}
+
+main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) 1fr minmax(240px, 340px);
+}
+
+aside {
+  overflow: auto;
+  padding: 12px;
+  background: var(--panel);
+  min-width: 0;
+}
+
+#tree-panel {
+  border-right: 1px solid var(--border);
+}
+
+#info-panel {
+  border-left: 1px solid var(--border);
+}
+
+#info-panel h2:not(:first-child) {
+  margin-top: 18px;
+}
+
+#viewport {
+  position: relative;
+  min-height: 0;
+  background: var(--viewport);
+}
+
+#viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#viewport.dragging {
+  outline: 3px dashed var(--accent);
+  outline-offset: -8px;
+}
+
+#drop-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  color: var(--muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 14px;
+}
+
+.tree > ul {
+  padding-left: 0;
+}
+
+.tree li > .row {
+  padding-left: 18px;
+}
+
+
+
+.tree .row {
+  display: block;
+  width: 100%;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree .row:hover {
+  background: var(--accent-soft);
+}
+
+.tree summary.row {
+  display: list-item;
+  list-style-position: inside;
+  padding-left: 4px;
+}
+
+.tree .row.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tree .row .mesh {
+  color: var(--accent);
+}
+
+.tree .row.selected .mesh {
+  color: #fff;
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+pre {
+  margin: 6px 0 0;
+  padding: 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.valid {
+  color: var(--good);
+}
+
+.failure {
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--bad);
+  border-radius: 4px;
+  background: var(--bad-soft);
+  overflow-wrap: anywhere;
+}
+
+.failure code {
+  font-size: 12px;
+}
+
+@media (max-width: 800px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 55vh auto auto;
+  }
+
+  #viewport {
+    order: -1;
+  }
+
+  #tree-panel,
+  #info-panel {
+    border: 0;
+    border-top: 1px solid var(--border);
+    max-height: 40vh;
+  }
+}
