@@ -32,12 +32,15 @@ gate_bindings() {
     cargo clippy -p openbim-ifcx-wasm --target wasm32-unknown-unknown --locked -- -D warnings
 
     # JavaScript (@openbim/ifcx): build the wasm module with the pinned
-    # wasm-bindgen CLI and run the Node suite against the built package, so
-    # the binding is proven to work from JS, not just to compile.
+    # wasm-bindgen CLI for Node, bundlers and plain browser pages, run the
+    # Node suite against the built package, then pack it and check every
+    # target as installed, including both browser builds in headless Chrome
+    # (IFCX_SKIP_BROWSER=1 skips only those), so the binding is proven to
+    # work from JS, not just to compile.
     if [[ -n "${IFCX_SKIP_JS:-}" ]]; then
         echo "warning: IFCX_SKIP_JS set; JS binding suite NOT run" >&2
     else
-        crates/openbim-ifcx-wasm/scripts/build-node-pkg.sh
+        crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh
     fi
 
     # Python (openbim-ifcx): build the abi3 wheel with maturin, install it

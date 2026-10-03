@@ -37,13 +37,16 @@ jobs:
           key: ${{ matrix.section }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Set up Node
+        # bindings runs the Node suite and the npm package check, whose
+        # webpack comes pinned from crates/openbim-ifcx-wasm/tools and whose
+        # headless Chrome is the one the hosted ubuntu image ships.
         if: matrix.section == 'bindings'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "20"
       - name: Install wasm-bindgen CLI
         # Must equal the `wasm-bindgen` pin in crates/openbim-ifcx-wasm/Cargo.toml;
-        # build-node-pkg.sh refuses a mismatch.
+        # build-npm-pkg.sh refuses a mismatch.
         if: matrix.section == 'bindings'
         uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
         with:

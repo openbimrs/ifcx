@@ -5,9 +5,10 @@ GLB, from JavaScript and TypeScript. A WebAssembly build of the
 [`openbim-ifcx`](https://crates.io/crates/openbim-ifcx) Rust crate, from the
 `openbim-ifcx-wasm` crate in [openbimrs/ifcx](https://github.com/openbimrs/ifcx).
 
-Published to npm as `@openbim/ifcx`, a CommonJS build for Node 18 and later.
-Browser bundling works in principle (the crate builds for
-`wasm32-unknown-unknown`) but has no tested recipe yet.
+Published to npm as `@openbim/ifcx`: one package for Node 18 and later,
+bundlers (webpack, Rollup) and plain browser pages, with TypeScript
+declarations for each. Every build is tested from the packed tarball,
+the browser builds in headless Chrome.
 
 Targets the `ifcx_alpha` draft of buildingSMART's IFC5. IFCX is still a
 moving draft; see the
@@ -19,12 +20,26 @@ moving draft; see the
 npm install @openbim/ifcx
 ```
 
-## Example
+## Entry points
+
+| Import | Build | Loads the wasm module |
+| --- | --- | --- |
+| `@openbim/ifcx` in Node (`require` or `import`) | CommonJS (`wasm-bindgen --target nodejs`) | synchronously, on load |
+| `@openbim/ifcx` in a bundler | ES module (`--target bundler`) | through the bundler's WebAssembly support, e.g. webpack 5 `experiments.asyncWebAssembly` |
+| `@openbim/ifcx/web` | ES module (`--target web`) | when you `await init()` |
+
+`package.json` `exports` picks the build: the `node` condition gets the
+CommonJS build, everything else the bundler build. Use `@openbim/ifcx/web`
+for a page without a bundler, and for bundlers without WebAssembly ES
+module integration, such as Vite (or add `vite-plugin-wasm`). All three
+export the same API; the `web` build adds the default `init` export (and
+`initSync`).
+
+## Node
 
 ```js
-const { readFileSync } = require("node:fs");
-const { writeFileSync } = require("node:fs");
-const { IfcxFile, compose, exportGlb } = require("@openbim/ifcx");
+const { readFileSync, writeFileSync } = require("node:fs");
+const { IfcxFile, compose, exportGlb } = require("@openbim/ifcx"); // or import
 
 const model = readFileSync("model.ifcx"); // a Buffer is a Uint8Array
 const file = IfcxFile.parse(model); // or a string
@@ -44,6 +59,39 @@ console.log(Object.keys(tree.children)); // the root nodes
 writeFileSync("model.glb", exportGlb([model, readFileSync("overlay.ifcx")]));
 ```
 
+## Browser
+
+With a bundler, import the package as usual; the bundler loads the wasm
+module:
+
+```js
+import { compose, exportGlb, fetchImports } from "@openbim/ifcx";
+```
+
+Without one, serve the package's `web/` directory, map the name in an
+import map (or import the file by URL), and call `init()` once before
+anything else. `init()` fetches `openbim_ifcx_wasm_bg.wasm` from next to
+the module; pass `init({ module_or_path: url })` to load it from elsewhere.
+
+```html
+<script type="importmap">
+  { "imports": { "@openbim/ifcx/web": "/node_modules/@openbim/ifcx/web/openbim_ifcx_wasm.js" } }
+</script>
+<script type="module">
+  import init, { IfcxFile, exportGlb, fetchImports, validate } from "@openbim/ifcx/web";
+
+  await init();
+  const url = new URL("models/house.ifcx", location.href);
+  const model = new Uint8Array(await (await fetch(url)).arrayBuffer());
+
+  // Fetch what the model imports, relative to its own URL, then use it.
+  const imports = await fetchImports(model, { baseUrl: url });
+  const report = validate(model, { imports });
+  const glb = exportGlb(model, { imports }); // e.g. for three.js's GLTFLoader.parse
+  console.log(IfcxFile.parse(model).header.id, report.valid, glb.length);
+</script>
+```
+
 ## API
 
 | Call | Returns |
@@ -57,6 +105,8 @@ writeFileSync("model.glb", exportGlb([model, readFileSync("overlay.ifcx")]));
 | `compose(layers, options?)` | the composed tree as a `ComposedNode` |
 | `validate(layers, options?)` | a `ValidationReport` over all layers and resolved imports |
 | `exportGlb(layers, options?)` | the composed model as binary glTF 2.0, a `Uint8Array` |
+| `fetchImports(layers, options?)` | a promise of a `Map` from import `uri` to file, for `options.imports` |
+| `init(input?)` | `@openbim/ifcx/web` only: loads the wasm module; await it once first |
 
 `layers` is one input or an array of them, weakest first. TypeScript
 declarations ship with the package.
@@ -79,8 +129,31 @@ a file), the layers become the imports of a synthetic main layer, as
 upstream's `ifcx compose` command builds it, and every import must be
 supplied. `integrity` values are checked against the supplied bytes. In
 upstream order an import overrides the layer that imports it, and a later
-layer overrides both. Nothing is fetched from the network or the
-filesystem.
+layer overrides both. The WebAssembly module never touches the network or
+the filesystem.
+
+**Fetching imports.** `fetchImports(layers, options?)` collects them for
+you, in JavaScript: it reads each layer's `imports`, fetches every `uri`
+(recursively, each once, concurrently) and resolves to a `Map` keyed by
+the exact import `uri`, ready for `options.imports`.
+
+- `baseUrl`: what relative URIs of the given layers resolve against;
+  `location.href` by default in a browser. A fetched file's own imports
+  resolve against its URL.
+- `fetch`: the function that loads a URL, the global `fetch` by default.
+  Pass your own for credentials, a cache, a mirror, or Node files:
+  `{ fetch: async (url) => readFile(new URL(url)) }`. It may return a
+  `Response`, a `Uint8Array`, an `ArrayBuffer` or a string. Without a
+  `baseUrl` it receives a relative `uri` unchanged.
+- `imports`: files already at hand, never fetched again.
+- `signal`: an `AbortSignal` passed to every fetch.
+
+The in-memory map keys a file by its exact `uri`, as upstream's
+`InMemoryLayerProvider` does, so two different files imported under the
+same relative `uri` from different directories cannot both be supplied;
+the first one fetched is used. Anything that cannot be fetched rejects with
+an `IfcxError` with code `fetch`; `integrity` and import cycles are checked
+by `compose`, `validate` and `exportGlb`.
 
 **GLB export.** `exportGlb` writes the render scene of the composed tree:
 transformed, instanced meshes, lines and points with their materials, one
@@ -111,6 +184,7 @@ Every failure throws an `Error` with `name === "IfcxError"` and a stable
 | `compose` | a reference cycle, or a reference to a node no layer defines |
 | `invalid-argument` | an argument of the wrong type, or no layers |
 | `glb` | the scene could not be written as GLB (over 4 GiB) |
+| `fetch` | `fetchImports` could not fetch an import, or got no file back |
 
 A code is never renamed or reused.
 
@@ -118,8 +192,16 @@ A code is never renamed or reused.
 
 ```sh
 cargo install wasm-bindgen-cli --version 0.2.128 --locked
-crates/openbim-ifcx-wasm/scripts/build-node-pkg.sh   # builds pkg/ and runs the Node suite
+crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh    # builds pkg/, runs every check
 ```
+
+The script binds one release build three times (`pkg/`, `pkg/bundler/`,
+`pkg/web/`), runs the Node suite, then `npm pack`s the package and checks
+each entry point from the tarball: Node `require` and `import`, a webpack
+bundle, and the `web` and bundler builds in headless Chrome, which parse,
+validate, compose, fetch imports and export GLB from the repository's
+fixtures. It finds Chrome through `CHROME_BIN`, `PATH` or a Playwright
+download; `IFCX_SKIP_BROWSER=1` skips the browser part with a warning.
 
 ## License
 

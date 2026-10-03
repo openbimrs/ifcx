@@ -104,7 +104,8 @@ export type IfcxErrorCode =
   | "layer"
   | "compose"
   | "invalid-argument"
-  | "glb";
+  | "glb"
+  | "fetch";
 "#;
 
 /// One IFCX file. Writing it back is lossless: key order, unknown fields,

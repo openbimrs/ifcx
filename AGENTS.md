@@ -12,7 +12,7 @@ implemented without executable evidence here.
 - `crates/openbim-ifcx/` — file model, JSON read/write, composition (`src/compose/`), attribute validation (`src/validate.rs`), layer stacks (`src/layers/`, features `integrity` and `fs`)
 - `crates/openbim-ifcx-geometry/` — per-node attribute decoders (transforms, meshes, curves, point clouds in `points.rs`, presentation in `presentation.rs`) the flat render scene (`scene.rs`), and GLB export (`glb.rs`, example `ifcx2glb`); depends on the core crate, never on a renderer
 - `crates/openbim-ifcx-binding-core/` — host-independent core of the bindings (`Document`, `LayerSet`, `BindingError` codes); JSON text to the hosts; `publish = false`
-- `crates/openbim-ifcx-wasm/` — JavaScript binding, npm `@openbim/ifcx` (`npm/package.json`, `scripts/build-node-pkg.sh`, `tests/js/`); `publish = false` on crates.io
+- `crates/openbim-ifcx-wasm/` — JavaScript binding, npm `@openbim/ifcx` (`npm/package.json`, `scripts/build-npm-pkg.sh`, `js/fetch-imports.js`, `tests/js/`, `tools/check-package.mjs`); `publish = false` on crates.io
 - `crates/openbim-ifcx-py/` — Python binding, PyPI `openbim-ifcx` (`pyproject.toml`, `python/openbim_ifcx/`, `scripts/check-python.sh`, `tests/python/`); `publish = false` on crates.io
 - `docs/capabilities.md` — authoritative capability table
 - `docs/adr/` — architecture decisions; 0002 fixes the crate split
@@ -28,7 +28,7 @@ implemented without executable evidence here.
 ./scripts/gate.sh
 ./scripts/gate.sh rust          # one section; `bindings` needs wasm-bindgen-cli 0.2.128, node, uv, maturin
 cargo test --workspace
-crates/openbim-ifcx-wasm/scripts/build-node-pkg.sh   # npm package + Node suite
+crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh    # npm package (Node, bundler, web) + Node suite + headless-browser check
 crates/openbim-ifcx-py/scripts/check-python.sh       # wheel + Python suite
 # opt-in, needs a local buildingSMART/IFC5-development checkout
 IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx --test upstream_round_trip

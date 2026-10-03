@@ -186,7 +186,7 @@ jobs:
         with:
           tool: wasm-bindgen-cli@0.2.128
       - name: Build and test the package
-        run: crates/openbim-ifcx-wasm/scripts/build-node-pkg.sh
+        run: crates/openbim-ifcx-wasm/scripts/build-npm-pkg.sh
       - name: Rehearse publish
         # npm 11 refuses even a dry run over a live version, so rehearsing
         # an already-published tag packs the tarball instead.
