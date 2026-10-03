@@ -1,0 +1,18 @@
+[package]
+name = "openbim-ifcx"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+authors = ["point-grey"]
+repository = "https://github.com/openbimrs/ifcx"
+homepage = "https://github.com/openbimrs/ifcx"
+documentation = "https://docs.rs/openbim-ifcx"
+readme = "README.md"
+description = "OpenBIM.rs family for IFC5 / IFCX, the layered JSON model. Scaffold only; no reader yet."
+keywords = ["bim", "openbim", "ifc", "ifc5", "ifcx"]
+categories = ["parser-implementations"]
+# Not published until a reader exists; see docs/capabilities.md.
+publish = false
+
+[dependencies]
