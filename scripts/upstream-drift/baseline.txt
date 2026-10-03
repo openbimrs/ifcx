@@ -1,0 +1,21 @@
+# Summary lines of scripts/upstream-drift.sh against
+# buildingSMART/IFC5-development 1a63082ada967c683cfacee2005f8f749c8e1b79.
+# Regenerate with --update-baseline after reviewing a drift report.
+imports: 7 URIs, 1 unavailable
+imports: import https://ifcx.dev/@nlsfb/nlsfb@v1.ifcx sha256:22c3f74fa121296e
+imports: import https://ifcx.dev/@openusd.org/usd@v1.ifcx sha256:ec9d50cd00e20c8b
+imports: import https://ifcx.dev/@standards.buildingsmart.org/ifc/core/ifc@v5a.ifcx sha256:7ada4aea92eefd97
+imports: import https://ifcx.dev/@standards.buildingsmart.org/ifc/core/prop@v5a.ifcx sha256:5bd444faf1b515b2
+imports: import https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-infra/infra@v1.0.0.ifcx sha256:b1905b68ab20b943
+imports: import https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-mat/ifc-mat@v1.0.0.ifcx sha256:0bfecb9f32ce8f10
+imports: import https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-mat/prop@v1.0.0.ifcx unavailable (HTTP 404)
+round-trip: 47 files, 0 failures
+validation: 47 files: 47 valid, 0 need imported schemas, 0 invalid
+composition: 47 files: 35 compose alone, 12 on their folder, 0 fail
+layers: 37 stacks built, 4 unresolved, 0 failures
+layers:   unresolved   4x https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-mat/prop@v1.0.0.ifcx
+decode: 47 files: 41840 transforms; 1925 meshes (720241 triangles, 522435 vertices); 85 curve attributes (85 polylines, 9946 vertices, 0 unsupported); 0 null deletions; 0 failures
+decode: 47 files: point clouds pcd 2, array 4, base64 2 (102761 points, 4 coloured); visibility 62, diffuseColor 9366, opacity 458, gltf::material 2 (2 PBR); 0 failures
+scene: 47 files: 26218 instances, 4181777 triangles, 9884 segments, 102761 points, 0 warnings
+parity: 59 cases: 55 match, 4 known divergences, 0 differ
+gltf: 50 files: 0 errors, 0 warnings, 16 infos, 0 hints

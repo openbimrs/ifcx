@@ -1,0 +1,262 @@
+# Re-runs every opt-in upstream check against buildingSMART/IFC5-development
+# once a week, so a changed IFCX draft shows up as an issue here rather than
+# as a user's bug report. See CONTRIBUTING.md#upstream-drift.
+#
+# - `check` clones upstream (its default branch, or the `upstream_ref`
+#   input), fetches the ifcx.dev imports into an offline mirror (cached),
+#   and runs scripts/upstream-drift.sh: round trip, validation, composition,
+#   layer stacks, geometry decode, render scenes, composition parity with
+#   upstream's TypeScript, and the Khronos glTF validator. A failed check, or
+#   a summary line that differs from scripts/upstream-drift/baseline.txt, is
+#   drift. It also records upstream's branch heads and reports which moved
+#   since the last recorded run.
+# - `report` opens, or updates in place, the single open issue labelled
+#   `upstream-drift`, and closes it when a run against the default branch
+#   passes again.
+#
+# State: the branch heads live in the `upstream-drift-state` artifact (90
+# days) of the latest non-dry run on main; each such run reads the previous
+# one and uploads its own. A dry run reads it but neither records state nor
+# touches issues.
+#
+# Not part of CI: it never runs on push or pull request, and its Rust cache
+# has its own key.
+name: Upstream drift
+
+on:
+  schedule:
+    - cron: "23 4 * * 1" # Mondays 04:23 UTC
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "IFC5-development branch, tag, or full commit SHA to check (empty: its default branch)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run: report in the run summary only; open, update, or close no issue and record no state"
+        type: boolean
+        default: false
+
+concurrency:
+  group: upstream-drift
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  UPSTREAM_REPOSITORY: buildingSMART/IFC5-development
+  # Drift issues become sub-issues of this tracker ("Follow the IFCX draft as it changes").
+  TRACKING_ISSUE: "40"
+
+jobs:
+  check:
+    name: Upstream checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read # find the previous run's state artifact and this job's log URL
+    outputs:
+      outcome: ${{ steps.drift.outputs.outcome }}
+      revision: ${{ steps.drift.outputs.revision }}
+      failed: ${{ steps.drift.outputs.failed }}
+      job_url: ${{ steps.job.outputs.url }}
+      logs_url: ${{ steps.logs.outputs.artifact-url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      IFCX_UPSTREAM_DIR: ${{ github.workspace }}/.upstream/IFC5-development
+      IFCX_IMPORTS_MIRROR: ${{ github.workspace }}/.ifcx-mirror
+      IFCX_DRIFT_OUT: ${{ github.workspace }}/target/upstream-drift
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out upstream
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.UPSTREAM_REPOSITORY }}
+          ref: ${{ inputs.upstream_ref }}
+          path: .upstream/IFC5-development
+          persist-credentials: false
+      - name: Install Rust 1.88.0
+        uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
+        with:
+          toolchain: 1.88.0
+      - name: Cache Rust build
+        # Its own key, so it never evicts or feeds the CI gate's caches.
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: upstream-drift
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Set up Node
+        # scripts/upstream-parity.sh needs Node.js >= 22.
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Restore the ifcx.dev mirror
+        # Every run fetches the imports again; the cached copy is used only
+        # for a file the server cannot be reached for.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ifcx-mirror
+          key: ifcx-imports-${{ github.run_id }}
+          restore-keys: ifcx-imports-
+      - name: Find this job's log
+        id: job
+        run: |
+          url=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
+            --jq '.jobs[] | select(.name == "Upstream checks") | .html_url' | head -n 1)
+          echo "url=${url:-$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID}" >>"$GITHUB_OUTPUT"
+      - name: Compare upstream branch heads with the last recorded run
+        run: |
+          mkdir -p "$IFCX_DRIFT_OUT" "$RUNNER_TEMP/previous"
+          read -r id run < <(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=upstream-drift-state&per_page=30" \
+            --jq '[.artifacts[] | select((.expired | not) and .workflow_run.head_branch == "main")][0]
+                  | "\(.id) \(.workflow_run.id)"' 2>/dev/null) || true
+          previous=
+          if [ -n "${id:-}" ] && [ "$id" != null ]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" >"$RUNNER_TEMP/state.zip"
+            unzip -o -q "$RUNNER_TEMP/state.zip" -d "$RUNNER_TEMP/previous"
+            previous=$RUNNER_TEMP/previous/heads.tsv
+          fi
+          {
+            echo "### Upstream branches"
+            echo
+            if [ -n "$previous" ]; then
+              echo "Last recorded run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"
+              echo
+            fi
+            scripts/upstream-drift/branches.sh "https://github.com/$UPSTREAM_REPOSITORY.git" \
+              "$previous" "$IFCX_DRIFT_OUT/heads.tsv"
+          } >"$RUNNER_TEMP/branches.md"
+      - name: Run upstream checks
+        id: drift
+        run: |
+          set +e
+          ./scripts/upstream-drift.sh
+          status=$?
+          set -e
+          [ "$status" -le 1 ] || { echo "::error::upstream-drift.sh exited $status"; exit "$status"; }
+          cp "$RUNNER_TEMP/branches.md" "$IFCX_DRIFT_OUT/branches.md"
+          {
+            echo "outcome=$([ "$status" -eq 0 ] && echo pass || echo drift)"
+            echo "revision=$(cat "$IFCX_DRIFT_OUT/revision")"
+            echo "failed=$(awk -F'\t' '$2 == "fail" { print $1 }' "$IFCX_DRIFT_OUT/results.tsv" | paste -sd' ' -)"
+          } >>"$GITHUB_OUTPUT"
+          {
+            echo "## Upstream drift: $([ "$status" -eq 0 ] && echo none || echo found)"
+            echo
+            cat "$IFCX_DRIFT_OUT/report.md"
+            echo
+            cat "$IFCX_DRIFT_OUT/branches.md"
+          } >>"$GITHUB_STEP_SUMMARY"
+      - name: Upload logs and report
+        id: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: upstream-drift-report
+          path: |
+            target/upstream-drift/logs/
+            target/upstream-drift/*.md
+            target/upstream-drift/*.tsv
+            target/upstream-drift/*.txt
+            target/upstream-drift/baseline.diff
+            target/upstream-drift/revision
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Record upstream branch heads
+        if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: upstream-drift-state
+          path: |
+            target/upstream-drift/heads.tsv
+            target/upstream-drift/revision
+          retention-days: 90
+          if-no-files-found: error
+
+  report:
+    name: Drift issue
+    needs: check
+    if: ${{ !cancelled() && !inputs.dry_run }}
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write # the only job that writes: the upstream-drift label and issue
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      CHECK_RESULT: ${{ needs.check.result }}
+      OUTCOME: ${{ needs.check.outputs.outcome }}
+      REVISION: ${{ needs.check.outputs.revision }}
+      FAILED: ${{ needs.check.outputs.failed }}
+      JOB_URL: ${{ needs.check.outputs.job_url }}
+      LOGS_URL: ${{ needs.check.outputs.logs_url }}
+      UPSTREAM_REF: ${{ inputs.upstream_ref }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Download report
+        if: ${{ needs.check.outputs.logs_url != '' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: upstream-drift-report
+          path: report
+      - name: Open, update, or close the drift issue
+        run: |
+          set -euo pipefail
+          label=upstream-drift
+          ref=${UPSTREAM_REF:-default branch}
+          short=${REVISION:0:7}
+          [ "$CHECK_RESULT" = success ] || OUTCOME=error
+          open_issue() {
+            gh issue list --label "$label" --state open --limit 1 --json number --jq '.[0].number // empty'
+          }
+
+          if [ "$OUTCOME" = pass ]; then
+            issue=$(open_issue 2>/dev/null || true) # no label yet: no issue
+            if [ -n "$issue" ] && [ -z "$UPSTREAM_REF" ]; then
+              gh issue close "$issue" --comment "Upstream \`$short\` passes every check again and matches the baseline ([run]($RUN_URL)). Closing."
+            fi
+            echo "No drift; nothing to post."
+            exit 0
+          fi
+
+          if [ "$OUTCOME" = error ]; then
+            headline="the check job did not finish (result: $CHECK_RESULT)"
+            title="Upstream drift: check job failed"
+          elif [ -n "$FAILED" ]; then
+            headline="failed checks: $(printf '`%s` ' $FAILED)"
+            title="Upstream drift at IFC5-development $short: $(echo "$FAILED" | sed 's/ /, /g') failed"
+          else
+            headline="every check passed, but summary lines differ from the baseline"
+            title="Upstream drift at IFC5-development $short: results differ from baseline"
+          fi
+          {
+            echo "<!-- upstream-drift -->"
+            echo "The [upstream drift check]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/.github/workflows/upstream-drift.yml) found drift against [$UPSTREAM_REPOSITORY](https://github.com/$UPSTREAM_REPOSITORY) at ${REVISION:+\`$REVISION\` }(ref: $ref): $headline."
+            echo
+            echo "Logs: [run]($RUN_URL) · [job log](${JOB_URL:-$RUN_URL})${LOGS_URL:+ · [logs artifact]($LOGS_URL) (\`logs/<check>.log\` per check)}"
+            echo
+            [ -f report/report.md ] && cat report/report.md && echo
+            [ -f report/branches.md ] && cat report/branches.md && echo
+            echo "See [CONTRIBUTING.md](https://github.com/$GITHUB_REPOSITORY/blob/main/CONTRIBUTING.md#upstream-drift) for what to do. Later runs update this issue in place; the first run against the default branch that passes closes it."
+          } >body.md
+
+          if ! gh label list --search "$label" --json name --jq '.[].name' | grep -qx "$label"; then
+            gh label create "$label" --color D93F0B \
+              --description "The weekly upstream check found a changed IFCX draft"
+          fi
+          # Fails the job rather than risk a duplicate if the lookup fails.
+          issue=$(open_issue)
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --title "$title" --body-file body.md
+            gh issue comment "$issue" --body "Still drifting: upstream ${short:-?} (ref: $ref), $headline. [Run]($RUN_URL). The description above is updated to this run."
+          else
+            url=$(gh issue create --title "$title" --label "$label" --body-file body.md)
+            issue=${url##*/}
+            echo "Opened $url"
+            # Make it a sub-issue of the tracker; not fatal if that fails.
+            id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$issue" --jq .id)
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$TRACKING_ISSUE/sub_issues" -F sub_issue_id="$id" >/dev/null \
+              || echo "::warning::could not add #$issue as a sub-issue of #$TRACKING_ISSUE"
+          fi
+          echo "Drift issue: #$issue" >>"$GITHUB_STEP_SUMMARY"

@@ -19,6 +19,7 @@ implemented without executable evidence here.
 - `scripts/release-crate.py`, `.github/workflows/release.yml` — per-crate releases to crates.io, npm (`openbim-ifcx-wasm`), and PyPI (`openbim-ifcx-py`) by trusted publishing; see CONTRIBUTING.md
 - `scripts/gate.sh` — complete local/CI verification gate; sections `rust` and `bindings` (CI runs them as parallel jobs)
 - `scripts/upstream-parity.sh`, `scripts/parity/` — opt-in composition parity check against upstream's TypeScript; never vendors upstream code
+- `scripts/upstream-drift.sh`, `scripts/upstream-drift/`, `.github/workflows/upstream-drift.yml` — every opt-in upstream check in one run, compared with `scripts/upstream-drift/baseline.txt`; the workflow runs it weekly and keeps one `upstream-drift` issue (CONTRIBUTING.md#upstream-drift)
 - `CHANGELOG.md` — repository-level changes; each crate keeps its own `CHANGELOG.md`
 
 ## Commands
@@ -46,6 +47,9 @@ IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_MIRROR=../ifcx-mirror \
     cargo test --release -p openbim-ifcx --features fs --test upstream_layers -- --nocapture
 # composed trees vs upstream's TypeScript; needs Node.js >= 22 and npm (installs pinned esbuild)
 IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/upstream-parity.sh
+# all of the above in one run (fetches the ifcx.dev imports itself), compared with
+# scripts/upstream-drift/baseline.txt; --update-baseline rewrites it
+IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/upstream-drift.sh
 ```
 
 Trust command exit codes. Never summarize a Cargo pipeline in a way that hides
@@ -69,6 +73,16 @@ the Cargo process status.
 - The npm and PyPI versions must equal the crate version;
   `scripts/release-crate.py --set --apply` bumps both. Never publish by
   hand except the first npm version (see CONTRIBUTING.md).
+
+## Upstream drift
+
+`.github/workflows/upstream-drift.yml` runs `scripts/upstream-drift.sh`
+against upstream's default branch every Monday and on dispatch. It is not
+part of CI and never runs on push or pull request. A failed check or a
+changed summary line opens, or updates, the single open issue labelled
+`upstream-drift`. When the evidence changes on purpose, refresh
+`docs/capabilities.md` and `scripts/upstream-drift/baseline.txt` together
+(`--update-baseline`), naming the new upstream revision.
 
 ## Documentation discipline
 

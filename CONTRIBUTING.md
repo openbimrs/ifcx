@@ -28,6 +28,66 @@ missing tool fails the gate and names what to install. `IFCX_SKIP_JS=1` or
 them. Update README, rustdoc, capabilities, and
 CHANGELOG together when a user-visible contract changes.
 
+## Upstream drift
+
+IFCX is an alpha draft. The evidence in `docs/capabilities.md` was recorded
+against a pinned buildingSMART/IFC5-development commit, and
+`.github/workflows/upstream-drift.yml` re-checks it against upstream's
+default branch every Monday at 04:23 UTC. It runs
+`scripts/upstream-drift.sh`, which fetches the `ifcx.dev` imports into an
+offline mirror and runs every opt-in upstream check: round trip,
+validation, composition, layer stacks, geometry decode, render scenes,
+composition parity with upstream's TypeScript, and the Khronos glTF
+validator. Each check's summary line (counts and failures, without
+timings) is compared with `scripts/upstream-drift/baseline.txt`.
+
+When it finds drift, a failed check or a changed summary line, it opens
+an issue labelled `upstream-drift`, a sub-issue of
+[#40](https://github.com/openbimrs/ifcx/issues/40). If one is already
+open it updates that issue and comments, so there is never more than one.
+The issue names the upstream commit and the failed checks, and links:
+
+- the run and its `Upstream checks` job log, where each check is a
+  collapsible group;
+- the `upstream-drift-report` artifact, with `logs/<check>.log` per check,
+  `report.md`, `summary.txt`, and `baseline.diff`.
+
+Start from `baseline.diff` and the failed check's log, then reproduce
+locally against the same commit:
+
+```bash
+git -C ../IFC5-development fetch && git -C ../IFC5-development checkout <commit>
+IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/upstream-drift.sh
+```
+
+Then either fix the crate, if upstream changed the draft or found a bug,
+or accept the new results: update the counts and the named revision in
+`docs/capabilities.md`, run `./scripts/upstream-drift.sh --update-baseline`,
+and commit both. The first scheduled or dispatched run against the default
+branch that passes closes the issue. Known gaps are part of the baseline;
+for example, `ifcx.dev` does not serve `ifc-mat/prop@v1.0.0.ifcx`
+([upstream #124](https://github.com/buildingSMART/IFC5-development/issues/124)),
+so 4 examples have an unresolved import. If upstream fixes that, the
+baseline differs and the issue says so.
+
+The run summary also lists the upstream branches (draft work such as
+`post-alpha` happens there) that moved, appeared, or disappeared since the
+last recorded run. A moved branch alone opens no issue. The record is the
+`upstream-drift-state` artifact (branch heads and the checked revision,
+kept 90 days) of the latest non-dry run on `main`.
+
+Run it by hand from Actions -> Upstream drift -> Run workflow, or:
+
+```bash
+gh workflow run upstream-drift.yml -R openbimrs/ifcx --ref main
+gh workflow run upstream-drift.yml -R openbimrs/ifcx --ref main \
+  -f upstream_ref=post-alpha -f dry_run=true
+```
+
+`upstream_ref` checks a branch, tag, or full commit SHA instead of the
+default branch. `dry_run` only writes the run summary: no issue is opened,
+updated, or closed, and no state is recorded.
+
 ## Releasing a crate
 
 Every crate is versioned and released on its own; releasing one does not
