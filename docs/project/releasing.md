@@ -22,6 +22,11 @@ one (`0.1.x` to `0.2.0`) also lifts the requirement in each dependent, which
 then needs its own release. Fill in the changelog, run `./scripts/gate.sh`,
 and merge the bump to `main`.
 
+When `openbim-ifcx` and a crate depending on it are released together, tag
+`openbim-ifcx` first and wait for it to be on crates.io: until then the gate
+skips packaging `openbim-ifcx-geometry` with a warning, and its `cargo publish`
+would fail to resolve the new requirement.
+
 Then tag and push:
 
 ```bash
