@@ -21,11 +21,11 @@ carry georeferenced coordinates; convert to `f32` for rendering after
 applying world transforms.
 
 ```rust
-use openbim_ifcx::{compose, flatten, IfcxFile};
+use openbim_ifcx::{compose, flatten_owned, IfcxFile};
 use openbim_ifcx_geometry::{RenderScene, SceneOptions};
 
 let file = IfcxFile::from_json_slice(&std::fs::read("model.ifcx")?)?;
-let scene = RenderScene::from_composition(&compose(&flatten(&file.data))?, &SceneOptions::default());
+let scene = RenderScene::from_composition(&compose(&flatten_owned(file.data))?, &SceneOptions::default());
 for instance in &scene.instances {
     // instance.path, instance.geometry, instance.matrix, scene.materials[instance.material]
 }
@@ -41,7 +41,15 @@ To look at an IFCX file in any glTF viewer:
 cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- model.ifcx model.glb
 # layers, weakest first; --z-up keeps IFCX axes, --local leaves the origin off the root
 cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- base.ifcx overlay.ifcx out.glb
+# resolve imports from disk; --mirror maps a URI prefix to an offline copy
+cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- \
+    --resolve-imports --mirror https://ifcx.dev/=mirror/ifcx.dev model.ifcx model.glb
 ```
+
+Without `--resolve-imports`, `imports` are ignored. With it, every layer's
+imports load through `openbim_ifcx::layers::FsResolver`, in upstream order
+(each layer's imports override it, the next layer overrides both); nothing
+is fetched from the network.
 
 `scripts/gltf-validate.sh` (opt-in, needs Node.js) exports the fixtures and,
 with `IFCX_UPSTREAM_DIR`, every upstream example, and checks them with the

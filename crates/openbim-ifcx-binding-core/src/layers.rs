@@ -5,25 +5,22 @@
 //! schemas and data are concatenated in order (upstream's `Federate`), as the
 //! `compose-json` example of `openbim-ifcx` does: the last layer wins.
 //!
-//! With imports, the layers become the imports of a synthetic main layer, as
-//! upstream's `ifcx compose` command builds it, and the stack is resolved
-//! through a [`MemoryResolver`] holding the given files under their exact
-//! import `uri`. In upstream order an import overrides the layer importing
-//! it, so a layer's imports override that layer, and the next layer
-//! overrides both. Every import must then be present; `integrity` values are
-//! checked against the given bytes.
+//! With imports, the layers are stacked as the imports of a main layer
+//! without data, as upstream's `ifcx compose` builds it
+//! (`LayerStackBuilder::build_all`), and resolved through a
+//! [`MemoryResolver`] holding the given files under their exact import
+//! `uri`. In upstream order an import overrides the layer importing it, so a
+//! layer's imports override that layer, and the next layer overrides both.
+//! Every import must then be present; `integrity` values are checked against
+//! the given bytes.
 
-use openbim_ifcx::layers::{federate, LayerStackBuilder, MemoryResolver};
-use openbim_ifcx::{compose, flatten, Composition, IfcxFile, IfcxHeader, ImportNode};
+use openbim_ifcx::layers::{federate_owned, LayerStackBuilder, MemoryResolver};
+use openbim_ifcx::{compose, flatten_owned, Composition, IfcxFile};
 use openbim_ifcx_geometry::glb::{to_glb, GlbOptions};
 use openbim_ifcx_geometry::scene::{RenderScene, SceneOptions};
 
 use crate::error::BindingError;
 use crate::{report, tree};
-
-/// Key of the synthetic main layer. Import keys are URIs, which never
-/// contain `<`.
-const MAIN_KEY: &str = "<main>";
 
 /// Key of the `index`th layer passed by the host.
 fn layer_key(index: usize) -> String {
@@ -114,7 +111,7 @@ impl LayerSet {
                             .map_err(|e| BindingError::Read(format!("layer {index}: {e}")))
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(federate(&files).expect("at least one layer"))
+                Ok(federate_owned(files).expect("at least one layer"))
             }
             Some(imports) => self.federate_stack(imports),
         }
@@ -125,7 +122,7 @@ impl LayerSet {
         for (uri, bytes) in imports {
             resolver.insert(uri.clone(), bytes.clone());
         }
-        let mut main_imports = Vec::with_capacity(self.layers.len());
+        let mut keys = Vec::with_capacity(self.layers.len());
         for (index, bytes) in self.layers.iter().enumerate() {
             // Read each layer here as well, so a malformed one is a `read`
             // error naming its index, not a `layer` error naming a key the
@@ -133,44 +130,19 @@ impl LayerSet {
             IfcxFile::from_json_slice(bytes)
                 .map_err(|e| BindingError::Read(format!("layer {index}: {e}")))?;
             resolver.insert(layer_key(index), bytes.clone());
-            main_imports.push(ImportNode {
-                uri: layer_key(index),
-                integrity: None,
-                extra: Default::default(),
-            });
+            keys.push(layer_key(index));
         }
-        let main = IfcxFile {
-            header: IfcxHeader {
-                id: MAIN_KEY.into(),
-                ifcx_version: "ifcx_alpha".into(),
-                data_version: "1.0.0".into(),
-                author: String::new(),
-                timestamp: String::new(),
-                extra: Default::default(),
-            },
-            imports: main_imports,
-            schemas: Default::default(),
-            data: Vec::new(),
-            extra: Default::default(),
-        };
-        resolver
-            .insert_file(&main)
-            .map_err(|e| BindingError::Write(e.to_string()))?;
         let stack = LayerStackBuilder::new(resolver)
-            .build(MAIN_KEY)
+            .build_all(&keys)
             .map_err(|e| BindingError::Layer(e.to_string()))?;
-        // The synthetic main layer has no schemas and no data, but its header
-        // would lead the federated file; the first real layer's leads instead.
-        let mut file = federate(stack.layers()[1..].iter().map(|layer| layer.file()))
-            .expect("the main layer imports at least one layer");
-        file.header = stack.layers()[1].file().header.clone();
-        Ok(file)
+        // The first layer's header leads, as without imports.
+        Ok(stack.into_federated())
     }
 
     /// Flattens and composes the federated layers.
     pub fn compose(&self) -> Result<Composition, BindingError> {
         let file = self.federate()?;
-        compose(&flatten(&file.data)).map_err(|e| BindingError::Compose(e.to_string()))
+        compose(&flatten_owned(file.data)).map_err(|e| BindingError::Compose(e.to_string()))
     }
 
     /// The composed tree as JSON text: the artificial root over every root
@@ -197,7 +169,9 @@ impl LayerSet {
     }
 
     /// Checks the attributes of the federated layers against their merged
-    /// `schemas`, and returns the report as JSON text:
+    /// `schemas`, those of resolved imports included (as
+    /// `openbim_ifcx::layers::LayerStack::validate` does), and returns the
+    /// report as JSON text:
     /// `{"valid": bool, "failures": [{"node", "attribute", "pointer", "kind",
     /// "message"}]}`. `kind` is a stable code such as `missing-schema` or
     /// `type-mismatch`.

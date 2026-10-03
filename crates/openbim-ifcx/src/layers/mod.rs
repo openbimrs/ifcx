@@ -84,6 +84,7 @@ use indexmap::IndexMap;
 
 use crate::json::ReadError;
 use crate::model::{IfcxFile, ImportNode};
+use crate::validate::ValidationReport;
 
 #[cfg(feature = "fs")]
 pub use fs::{FsError, FsResolver};
@@ -259,6 +260,47 @@ impl LayerStack {
     pub fn federate(&self) -> IfcxFile {
         federate(self.layers.iter().map(Layer::file)).expect("a layer stack is never empty")
     }
+
+    /// [`federate`](Self::federate) for a stack that is not needed
+    /// afterwards: the layers' schemas and data move into the result instead
+    /// of being copied. Pass its `data` to [`flatten_owned`] to keep
+    /// composition free of copies too.
+    ///
+    /// [`flatten_owned`]: crate::flatten_owned
+    pub fn into_federated(self) -> IfcxFile {
+        federate_owned(self.layers.into_iter().map(Layer::into_file))
+            .expect("a layer stack is never empty")
+    }
+
+    /// Checks the attributes of the whole stack: the schemas of every layer,
+    /// merged as [`federate`](Self::federate) does, against the attributes of
+    /// every layer's data, merged per path as [`flatten`](crate::flatten)
+    /// does. This is [`IfcxFile::validate`] of the federated file, without
+    /// copying it.
+    ///
+    /// So an attribute whose schema lives only in an imported file validates,
+    /// and only the value that wins for a path is checked.
+    ///
+    /// ```
+    /// use openbim_ifcx::layers::{LayerStackBuilder, MemoryResolver};
+    ///
+    /// let header = r#""header": {"id": "x", "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+    ///                            "author": "someone", "timestamp": "2026-10-03"}"#;
+    /// let mut resolver = MemoryResolver::new();
+    /// resolver.insert("main", format!(r#"{{{header}, "imports": [{{"uri": "schemas"}}],
+    ///     "schemas": {{}}, "data": [{{"path": "w", "attributes": {{"demo::height": 2.5}}}}]}}"#));
+    /// resolver.insert("schemas", format!(r#"{{{header}, "imports": [], "data": [],
+    ///     "schemas": {{"demo::height": {{"value": {{"dataType": "Real"}}}}}}}}"#));
+    ///
+    /// let stack = LayerStackBuilder::new(resolver).build("main")?;
+    /// // The main layer alone does not know `demo::height`; its stack does.
+    /// assert!(stack.main().file().validate().is_err());
+    /// assert!(stack.validate().is_ok());
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn validate(&self) -> Result<(), ValidationReport> {
+        crate::validate::validate_files(self.layers.iter().map(Layer::file)).into_result()
+    }
 }
 
 /// Merges `files` in the order given, as upstream's `Federate` does: the first
@@ -266,7 +308,8 @@ impl LayerStack {
 /// first position and takes the last value), and every data node in order.
 /// Top-level fields this crate does not model are not carried over.
 ///
-/// Returns `None` for no files.
+/// Returns `None` for no files. [`federate_owned`] does the same for files
+/// that are not needed afterwards, without copying them.
 pub fn federate<'a>(files: impl IntoIterator<Item = &'a IfcxFile>) -> Option<IfcxFile> {
     let mut files = files.into_iter().peekable();
     let header = files.peek()?.header.clone();
@@ -277,6 +320,29 @@ pub fn federate<'a>(files: impl IntoIterator<Item = &'a IfcxFile>) -> Option<Ifc
             schemas.insert(id.clone(), schema.clone());
         }
         data.extend(file.data.iter().cloned());
+    }
+    Some(IfcxFile {
+        header,
+        imports: Vec::new(),
+        schemas,
+        data,
+        extra: Default::default(),
+    })
+}
+
+/// [`federate`] for files that are not needed afterwards: their schemas and
+/// data move into the result instead of being copied. The result is the same.
+///
+/// Returns `None` for no files.
+pub fn federate_owned(files: impl IntoIterator<Item = IfcxFile>) -> Option<IfcxFile> {
+    let mut files = files.into_iter();
+    let first = files.next()?;
+    let header = first.header;
+    let mut schemas = first.schemas;
+    let mut data = first.data;
+    for file in files {
+        schemas.extend(file.schemas);
+        data.extend(file.data);
     }
     Some(IfcxFile {
         header,
@@ -331,18 +397,79 @@ impl<R: LayerResolver> LayerStackBuilder<R> {
                 importer: None,
                 source,
             })?;
-        let mut build = Build {
-            resolver: &mut self.resolver,
-            layers: Vec::new(),
-            bytes: HashMap::new(),
-            index: HashMap::new(),
-            edges: Vec::new(),
-            order: Vec::new(),
-        };
+        let mut build = Build::new(&mut self.resolver);
         let root = build.load(main, None, key)?;
         build.order.push(root);
         build.satisfy(root)?;
-        if !self.allow_cycles {
+        Self::finish(self.allow_cycles, build)
+    }
+
+    /// Loads several layers given weakest first, and recursively their
+    /// imports, as if they were the `imports` of a main layer without data.
+    /// This is how upstream's `ifcx compose` and viewer stack the files a
+    /// user names, so the last one wins.
+    ///
+    /// The stack holds only the named layers and their imports, in the order
+    /// [`build`](Self::build) would give them below that main layer: each
+    /// named layer, followed by its own new imports, which override it. A
+    /// layer named twice, or also imported, loads once. `uris` resolve with
+    /// no importer, as `build`'s `main` does. At least one is needed; with
+    /// none, the result is [`LayerError::Missing`] for an empty URI.
+    ///
+    /// ```
+    /// use openbim_ifcx::layers::{LayerStackBuilder, MemoryResolver};
+    ///
+    /// let layer = |id: &str| format!(r#"{{
+    ///     "header": {{"id": "{id}", "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+    ///                "author": "someone", "timestamp": "2026-10-03"}},
+    ///     "imports": [], "schemas": {{}},
+    ///     "data": [{{"path": "p1", "attributes": {{"demo::value": "{id}"}}}}]
+    /// }}"#);
+    /// let mut resolver = MemoryResolver::new();
+    /// resolver.insert("base", layer("base"));
+    /// resolver.insert("overlay", layer("overlay"));
+    ///
+    /// let stack = LayerStackBuilder::new(resolver).build_all(["base", "overlay"])?;
+    /// assert_eq!(stack.keys().collect::<Vec<_>>(), ["base", "overlay"]);
+    /// assert_eq!(stack.main().key(), "base");
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn build_all<I>(&mut self, uris: I) -> Result<LayerStack, LayerError<R::Error>>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<str>,
+    {
+        let mut build = Build::new(&mut self.resolver);
+        let mut pending = Vec::new();
+        for uri in uris {
+            let uri = uri.as_ref();
+            let key = build
+                .resolver
+                .key(uri, None)
+                .map_err(|source| LayerError::Resolver {
+                    uri: uri.to_owned(),
+                    importer: None,
+                    source,
+                })?;
+            if !build.index.contains_key(&key) {
+                pending.push(build.load(uri, None, key)?);
+            }
+        }
+        if pending.is_empty() {
+            return Err(LayerError::Missing {
+                uri: String::new(),
+                importer: None,
+            });
+        }
+        for i in pending {
+            build.order.push(i);
+            build.satisfy(i)?;
+        }
+        Self::finish(self.allow_cycles, build)
+    }
+
+    fn finish(allow_cycles: bool, build: Build<'_, R>) -> Result<LayerStack, LayerError<R::Error>> {
+        if !allow_cycles {
             if let Some(chain) = find_cycle(&build.edges) {
                 let chain = chain
                     .into_iter()
@@ -374,7 +501,18 @@ struct Build<'r, R> {
     edges: Vec<Vec<usize>>,
 }
 
-impl<R: LayerResolver> Build<'_, R> {
+impl<'r, R: LayerResolver> Build<'r, R> {
+    fn new(resolver: &'r mut R) -> Self {
+        Self {
+            resolver,
+            layers: Vec::new(),
+            bytes: HashMap::new(),
+            index: HashMap::new(),
+            edges: Vec::new(),
+            order: Vec::new(),
+        }
+    }
+
     fn load(
         &mut self,
         uri: &str,

@@ -71,7 +71,7 @@
 //! A render scene from a composed file:
 //!
 //! ```
-//! use openbim_ifcx::{compose, flatten, IfcxFile};
+//! use openbim_ifcx::{compose, flatten_owned, IfcxFile};
 //! use openbim_ifcx_geometry::{GeometryKind, RenderScene, SceneOptions};
 //!
 //! let file = IfcxFile::from_json_str(r#"{
@@ -86,7 +86,7 @@
 //!             "points": [[0,0,0],[1,0,0],[0,1,0]], "faceVertexIndices": [0,1,2]}}}
 //!     ]
 //! }"#)?;
-//! let composition = compose(&flatten(&file.data))?;
+//! let composition = compose(&flatten_owned(file.data))?;
 //! let scene = RenderScene::from_composition(&composition, &SceneOptions::default());
 //! let slab = &scene.instances[0];
 //! assert_eq!(slab.path, "storey/Slab");

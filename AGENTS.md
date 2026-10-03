@@ -42,6 +42,9 @@ IFCX_UPSTREAM_DIR=../IFC5-development cargo test --release -p openbim-ifcx-geome
 IFCX_UPSTREAM_DIR=../IFC5-development ./scripts/gltf-validate.sh
 # convert for a glTF viewer
 cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- in.ifcx out.glb
+# resolving imports from disk, ifcx.dev from an offline mirror
+cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- \
+    --resolve-imports --mirror https://ifcx.dev/=../ifcx-mirror/ifcx.dev in.ifcx out.glb
 # also needs an offline mirror of the ifcx.dev files, laid out as <host>/<path>
 IFCX_UPSTREAM_DIR=../IFC5-development IFCX_IMPORTS_MIRROR=../ifcx-mirror \
     cargo test --release -p openbim-ifcx --features fs --test upstream_layers -- --nocapture

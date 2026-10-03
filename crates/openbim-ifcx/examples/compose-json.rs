@@ -21,7 +21,7 @@
 use std::io::{BufWriter, Write};
 use std::process::ExitCode;
 
-use openbim_ifcx::{compose, flatten, ComposeError, ComposedNode, IfcxFile};
+use openbim_ifcx::{compose, flatten_owned, ComposeError, ComposedNode, IfcxFile};
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
 /// Serialises a composed node without building an intermediate
@@ -84,7 +84,7 @@ fn main() -> ExitCode {
 
     let stdout = std::io::stdout().lock();
     let mut out = BufWriter::new(stdout);
-    let written = match compose(&flatten(&data)) {
+    let written = match compose(&flatten_owned(data)) {
         Ok(composed) => serde_json::to_writer(&mut out, &Tree(&composed.root())),
         Err(e) => {
             let kind = match e {

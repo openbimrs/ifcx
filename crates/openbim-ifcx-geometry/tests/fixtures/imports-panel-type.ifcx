@@ -1,0 +1,33 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx-geometry/fixtures/imports-panel-type",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [
+    {"uri": "instanced-types.ifcx"}
+  ],
+  "schemas": {},
+  "data": [
+    {
+      "path": "row",
+      "children": {"A": "row-a", "B": "row-b"}
+    },
+    {
+      "path": "row-a",
+      "inherits": {"type": "panel"},
+      "attributes": {
+        "usd::xformop": {"transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 10, 0, 1]]}
+      }
+    },
+    {
+      "path": "row-b",
+      "inherits": {"type": "panel"},
+      "attributes": {
+        "usd::xformop": {"transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [3, 10, 0, 1]]}
+      }
+    }
+  ]
+}

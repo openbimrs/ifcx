@@ -66,9 +66,49 @@ impl FlatNode {
             }
         }
     }
+
+    /// Merges one later opinion into this node, moving its maps and attribute
+    /// values instead of copying them. Same rules as [`merge`](Self::merge).
+    pub fn merge_owned(&mut self, node: IfcxNode) {
+        self.merge_parts(node.children, node.inherits, node.attributes);
+    }
+
+    fn merge_parts(
+        &mut self,
+        children: Option<IndexMap<String, Option<String>>>,
+        inherits: Option<IndexMap<String, Option<String>>>,
+        attributes: Option<IndexMap<String, Value>>,
+    ) {
+        if let Some(children) = children {
+            // `extend` inserts in order and replaces an existing key in place.
+            self.children.extend(children);
+        }
+        for (name, inherit) in inherits.into_iter().flatten() {
+            match inherit {
+                None => {
+                    self.inherits.shift_remove(&name);
+                }
+                Some(path) => {
+                    self.inherits.insert(name, path);
+                }
+            }
+        }
+        if let Some(attributes) = attributes {
+            self.attributes.extend(
+                attributes
+                    .into_iter()
+                    .map(|(name, value)| (name, Arc::new(value))),
+            );
+        }
+    }
 }
 
 /// Merges input nodes into one [`FlatNode`] per path.
+///
+/// This borrows the nodes, so every attribute value is copied into the
+/// result. When the nodes are not needed afterwards, [`flatten_owned`] gives
+/// the same result without copying them, which is several times faster on
+/// large models.
 ///
 /// `nodes` must be in layer order, weakest first: the nodes of one file in
 /// file order, and for a layer stack the nodes of each layer after those of
@@ -117,6 +157,48 @@ where
     flat
 }
 
+/// [`flatten`] for nodes the caller no longer needs: the nodes are consumed
+/// and their paths, maps, and attribute values move into the result instead
+/// of being copied.
+///
+/// The result equals `flatten(&nodes)`.
+///
+/// ```
+/// use openbim_ifcx::{flatten, flatten_owned, IfcxFile};
+///
+/// let file = IfcxFile::from_json_str(r#"{
+///     "header": {"id": "demo", "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+///                "author": "someone", "timestamp": "2026-10-03"},
+///     "imports": [], "schemas": {},
+///     "data": [{"path": "w", "attributes": {"x::height": 2.5}},
+///              {"path": "w", "attributes": {"x::height": 3.0}}]
+/// }"#)?;
+/// let borrowed = flatten(&file.data);
+/// let owned = flatten_owned(file.data);
+/// assert_eq!(owned, borrowed);
+/// assert_eq!(*owned["w"].attributes["x::height"], 3.0);
+/// # Ok::<(), openbim_ifcx::ReadError>(())
+/// ```
+pub fn flatten_owned<I>(nodes: I) -> IndexMap<String, FlatNode>
+where
+    I: IntoIterator<Item = IfcxNode>,
+{
+    let mut flat: IndexMap<String, FlatNode> = IndexMap::new();
+    for node in nodes {
+        let IfcxNode {
+            path,
+            children,
+            inherits,
+            attributes,
+            ..
+        } = node;
+        flat.entry(path)
+            .or_default()
+            .merge_parts(children, inherits, attributes);
+    }
+    flat
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -138,6 +220,7 @@ mod tests {
             node(json!({"path": "a", "children": {"x": "3"}, "attributes": {"p": 4}})),
         ];
         let flat = flatten(&nodes);
+        assert_eq!(flatten_owned(nodes.clone()), flat);
         let a = &flat["a"];
         assert_eq!(keys(&a.children), ["x", "y"]);
         assert_eq!(a.children["x"].as_deref(), Some("3"));
@@ -153,6 +236,7 @@ mod tests {
             node(json!({"path": "a", "inherits": {"t": "T2"}})),
         ];
         let flat = flatten(&nodes);
+        assert_eq!(flatten_owned(nodes.clone()), flat);
         assert_eq!(keys(&flat["a"].inherits), ["u", "t"]);
         assert_eq!(flat["a"].inherits["t"], "T2");
     }
@@ -164,6 +248,7 @@ mod tests {
             node(json!({"path": "a", "children": {"x": null}, "attributes": {"p": null}})),
         ];
         let flat = flatten(&nodes);
+        assert_eq!(flatten_owned(nodes.clone()), flat);
         assert_eq!(flat["a"].children["x"], None);
         assert_eq!(*flat["a"].attributes["p"], Value::Null);
     }
@@ -177,6 +262,7 @@ mod tests {
             node(json!({"path": "b", "attributes": {"p": 1}})),
         ];
         let flat = flatten(&nodes);
+        assert_eq!(flatten_owned(nodes.clone()), flat);
         assert_eq!(keys(&flat), ["b", "a/x", "a"]);
         assert_eq!(flat["a"], FlatNode::default());
     }
