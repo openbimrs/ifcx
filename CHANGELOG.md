@@ -46,6 +46,19 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `usd::usdgeom::basiscurves` into polylines, with non-linear curve types
   reported as unsupported (#5). Malformed values return a typed
   `DecodeError`.
+- `openbim-ifcx-geometry` decodes point clouds per node from
+  `points::array`, `points::base64`, and `pcd::base64` (PCD `ascii`,
+  `binary`, `binary_compressed`) into `PointCloud` with `f64` positions and
+  optional linear RGB colours. Malformed base64 or PCD returns
+  `DecodeError::InvalidBase64`, `ByteLength`, or `InvalidPcd`; PCD layouts
+  upstream cannot read either return `UnsupportedPcd` (#6).
+- `openbim-ifcx-geometry` decodes visibility, `diffuseColor`, `opacity`, and
+  `gltf::material` per node (`NodePresentation`) and resolves visibility and
+  materials over a node's ancestors with the reference viewer's precedence
+  (`is_visible`, `resolve_basic_material`, `resolve_mesh_material`) (#7).
+- `openbim-ifcx-geometry` `Attributes` trait reads attributes from an
+  `IfcxNode`, `FlatNode`, `ComposedNode`, or a plain map, treating `null` as
+  absent.
 
 - Repository scaffold: `openbim-ifcx` crate with a status constant only,
   verification gate, pinned CI, and Dependabot for action pins.

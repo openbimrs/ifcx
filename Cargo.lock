@@ -117,6 +117,8 @@ dependencies = [
 name = "openbim-ifcx-geometry"
 version = "0.0.0"
 dependencies = [
+ "base64",
+ "indexmap",
  "openbim-ifcx",
  "serde_json",
 ]

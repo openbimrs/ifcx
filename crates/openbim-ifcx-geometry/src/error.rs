@@ -38,6 +38,33 @@ pub enum DecodeError {
     CurveTooShort { curve: usize, vertex_count: u64 },
     /// A 4×4 transform whose last column is not `(0, 0, 0, 1)`.
     NonAffineTransform { last_column: [f64; 4] },
+    /// A string that is not one of the tokens the attribute allows.
+    UnknownToken {
+        at: String,
+        token: String,
+        /// The allowed tokens, for example `"inherited or invisible"`.
+        expected: &'static str,
+    },
+    /// Two lists that must have one entry each, such as point colours and
+    /// positions, differ in length.
+    LengthMismatch {
+        field: &'static str,
+        len: usize,
+        expected: usize,
+    },
+    /// A base64 string is malformed.
+    InvalidBase64 { at: String, reason: String },
+    /// Decoded binary data is not a whole number of elements.
+    ByteLength {
+        at: String,
+        bytes: usize,
+        element_size: usize,
+    },
+    /// A PCD header or data section is malformed or truncated.
+    InvalidPcd { reason: String },
+    /// A well-formed PCD file in a layout the upstream viewer cannot read
+    /// either, such as `f64` coordinates or `DATA binary_lz4`.
+    UnsupportedPcd { reason: String },
 }
 
 impl fmt::Display for DecodeError {
@@ -77,6 +104,27 @@ impl fmt::Display for DecodeError {
                 f,
                 "transform last column is {last_column:?}, expected [0, 0, 0, 1]"
             ),
+            Self::UnknownToken {
+                at,
+                token,
+                expected,
+            } => write!(f, "{at}: unknown token {token:?}, expected {expected}"),
+            Self::LengthMismatch {
+                field,
+                len,
+                expected,
+            } => write!(f, "`{field}` has {len} entries, expected {expected}"),
+            Self::InvalidBase64 { at, reason } => write!(f, "{at}: invalid base64: {reason}"),
+            Self::ByteLength {
+                at,
+                bytes,
+                element_size,
+            } => write!(
+                f,
+                "{at}: {bytes} bytes is not a whole number of {element_size}-byte elements"
+            ),
+            Self::InvalidPcd { reason } => write!(f, "invalid PCD: {reason}"),
+            Self::UnsupportedPcd { reason } => write!(f, "unsupported PCD: {reason}"),
         }
     }
 }
