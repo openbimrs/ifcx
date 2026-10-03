@@ -21,5 +21,7 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Workspace crates live under `crates/`, as in `openbimrs/ifc`.
+
 - License changed from AGPL-3.0 to MIT before any code or release.
 - MSRV is 1.88, matching `openbim-ifc` and `openbim-step`.
