@@ -9,6 +9,12 @@ repository.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-03
+
+First release: decoders for `ifcx_alpha` transforms, meshes, curves, point
+clouds and presentation; a flat render scene over a composed tree; and GLB
+export.
+
 ### Added
 
 - `openbim-ifcx-geometry` writes a `RenderScene` as binary glTF 2.0

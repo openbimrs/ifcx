@@ -23,6 +23,7 @@ gate_rust() {
     RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
     # Every publishable crate must package and build from its .crate alone.
     cargo package --locked -p openbim-ifcx
+    cargo package --locked -p openbim-ifcx-geometry
 }
 
 gate_bindings() {

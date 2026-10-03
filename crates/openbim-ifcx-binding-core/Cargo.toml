@@ -19,7 +19,7 @@ publish = false
 openbim-ifcx = { path = "../openbim-ifcx", version = "0.1.0" }
 # GLB export of the render scene. Unpublished, which is fine here: this crate
 # and both bindings are `publish = false` and built from source.
-openbim-ifcx-geometry = { path = "../openbim-ifcx-geometry", version = "0.0.0" }
+openbim-ifcx-geometry = { path = "../openbim-ifcx-geometry", version = "0.1.0" }
 serde = "1"
 # Same crate and features openbim-ifcx uses: key order and exact floats
 # survive into the JSON handed to the hosts.
