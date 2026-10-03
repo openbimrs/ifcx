@@ -1,0 +1,10 @@
+{
+  "name": "openbim-ifcx-upstream-parity",
+  "private": true,
+  "description": "Opt-in parity check against buildingSMART/IFC5-development; see ../upstream-parity.sh",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

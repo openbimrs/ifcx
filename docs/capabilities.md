@@ -10,7 +10,7 @@ Target draft: `ifcx_alpha` (`schema/ifcx.tsp` in buildingSMART/IFC5-development)
 | --- | --- | --- | --- | --- |
 | Read and write an IFCX file losslessly | implemented | `ifcx_alpha` | `openbim-ifcx` | Content round-trips, including unknown fields and `null` deletions. Map keys keep their order; known fields are written in `ifcx.tsp` order. All 47 upstream example files (`1a63082`) round-trip via the opt-in `upstream_round_trip` test |
 | Flatten layered nodes by path | implemented | `ifcx_alpha` | `openbim-ifcx` | `flatten`, upstream `FlattenCompositionInput` (`1a63082`): later nodes win for children and attributes, `null` inherits remove, `null` children are kept for composition. Keys keep insertion order; upstream's JavaScript objects list integer-like keys first |
-| Compose layers into a resolved node tree | implemented | `ifcx_alpha` | `openbim-ifcx` | `compose`, upstream `ComposeNode`/`CreateArtificialRoot` (`1a63082`): `inherits` expansion, `head/a/b` references, `null` child deletion, local attributes over inherited, `head/a` paths editing children, artificial root over all roots. Sub-trees are shared through `Arc` and copied only along edited paths; no recursion per tree level. Cycles and unknown references are typed errors; cycles and roots use reference heads, as upstream's `TODO` asks (upstream misses cycles through `head/a` and overflows the stack), and a reference to a missing node is an error where upstream composes an empty node. The opt-in `upstream_composition` test composes all 47 upstream examples: 35 alone and 12 overlays on top of their example folder; output was checked equal to upstream's TypeScript for all 47 |
+| Compose layers into a resolved node tree | implemented | `ifcx_alpha` | `openbim-ifcx` | `compose`, upstream `ComposeNode`/`CreateArtificialRoot` (`1a63082`): `inherits` expansion, `head/a/b` references, `null` child deletion, local attributes over inherited, `head/a` paths editing children, artificial root over all roots. Sub-trees are shared through `Arc` and copied only along edited paths; no recursion per tree level. Cycles and unknown references are typed errors; cycles and roots use reference heads, as upstream's `TODO` asks (upstream misses cycles through `head/a` and overflows the stack), and a reference to a missing node is an error where upstream composes an empty node. The opt-in `upstream_composition` test composes all 47 upstream examples: 35 alone and 12 overlays on top of their example folder. `scripts/upstream-parity.sh` checks the composed trees equal to upstream's TypeScript for all 47 (`1a63082`); see [Upstream parity](#upstream-parity) |
 | Check attributes against the file's `schemas` | implemented | `ifcx_alpha` | `openbim-ifcx` | Rules of upstream `schema-validation.ts` (`1a63082`), collecting every failure with node path, attribute id, and JSON pointer. Stricter than upstream for `Integer` fractions, array `min`/`max`, and non-object `Object` values; `Blob` is accepted unchecked, unknown `dataType`s are reported, `quantityKind` is not checked. All 47 upstream examples validate via the opt-in `upstream_validation` test when their imported schema files are supplied |
 | Resolve imports | implemented | `ifcx_alpha` | `openbim-ifcx` | `layers::LayerStackBuilder` over a caller-supplied `LayerResolver`; each layer loads once, in upstream `IfcxLayerStackBuilder` order (`1a63082`); `federate` merges schemas and data in that order. Typed errors for missing layers, cycles, and `integrity` mismatch (SRI-style `sha256`/`sha384`/`sha512`, feature `integrity`, default on). `FsResolver` behind feature `fs`; no network access. All 41 upstream examples with imports build stacks via the opt-in `upstream_layers` test against an offline `ifcx.dev` mirror, except 4 that import `ifc-mat/prop@v1.0.0.ifcx`, which `ifcx.dev` does not serve |
 | World transforms through the node hierarchy | implemented | `ifcx_alpha` | `openbim-ifcx-geometry` | `usd::xformop` `{transform}` decodes to an affine `f64` `Transform` in USD's row-vector layout (translation in the last row, as upstream's viewer reads it); non-affine or malformed matrices are typed errors. `world_from_parent` composes a child's world matrix, inheriting when absent. Walking the composed node tree waits for composition and the render scene (#8). All 41 840 upstream transforms (`1a63082`) decode via the opt-in `upstream_decode` test |
@@ -50,6 +50,37 @@ Checked against `src/ifcx-core/layers/layer-stack.ts` and `Federate` in
   accepts import cycles silently; this crate rejects them unless
   `allow_cycles(true)` is set. Upstream does not check `integrity` (TODO in
   its providers) and defines no format for it.
+
+## Upstream parity
+
+Upstream publishes no license, so its examples are not vendored and parity
+with its TypeScript reference implementation is the conformance evidence.
+`scripts/upstream-parity.sh` (opt-in, not in `gate.sh`) bundles
+`LoadIfcxFile` from a local checkout named by `IFCX_UPSTREAM_DIR` with a
+pinned esbuild, composes each case with it and with this crate's
+`compose-json` example, and compares the trees as JSON values. Imports are
+not resolved: every `ifcx_alpha` example imports only schema files, which
+carry no `data`, so they cannot change a composed tree.
+
+Last run: buildingSMART/IFC5-development `1a63082`, draft `ifcx_alpha`,
+59 cases.
+
+| Cases | Result |
+| --- | --- |
+| 35 upstream examples composed alone | equal to upstream |
+| 12 upstream examples that reference nodes of other files (`Geotech` 2, `Hello Wall/advanced` 3, `Tunnel Excavation` 7), composed on top of every other file of their example folder in sorted order | equal to upstream |
+| 10 hand-written fixtures composed alone (`tests/fixtures/*.ifcx`) | 8 equal; `layer-base` and `layer-edit` reference nodes they do not define |
+| 2 hand-written layer stacks (`layer-base` + `layer-edit`, `layers/chain`) | reference nodes they do not define |
+
+- Upstream writes `-0` as `0` (JavaScript `JSON.stringify`); this crate keeps
+  `-0.0` as read. The comparison reads `-0` as `0`; 11 examples and
+  `geometry-model.ifcx` contain it (`Tekla House` 3 480 times).
+- Key order of attributes and children was also identical in every equal
+  case.
+- Known divergence: a reference to a node that no layer defines is
+  `ComposeError::UnknownReference` here, while upstream composes an empty
+  node. The 4 fixture cases above report this and are not counted as
+  differences.
 
 ## Not here
 

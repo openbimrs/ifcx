@@ -304,3 +304,36 @@ fn deep_chains_do_not_recurse() {
         other => panic!("{other:?}"),
     }
 }
+
+#[test]
+fn small_geometry_model_validates_and_composes() {
+    let file = read("geometry-model.ifcx");
+    file.validate().unwrap();
+    let round_trip = IfcxFile::from_json_str(&file.to_json_string().unwrap()).unwrap();
+    assert_eq!(round_trip, file);
+
+    let composed = compose(&flatten(&file.data)).unwrap();
+    assert_eq!(composed.roots(), ["pavilion"]);
+    let get = |path: &str| composed.get(path).unwrap_or_else(|| panic!("{path}"));
+
+    // Both columns take the type's mesh; column 2 edits only its axis.
+    assert!(Arc::ptr_eq(get("column-1/Body"), get("column-type-body")));
+    assert!(Arc::ptr_eq(get("column-2/Body"), get("column-type-body")));
+    assert!(!Arc::ptr_eq(get("column-2/Axis"), get("column-type-axis")));
+    assert!(!get("column-1/Axis")
+        .attributes
+        .contains_key("usd::usdgeom::visibility"));
+    assert_eq!(
+        *get("column-2/Axis").attributes["usd::usdgeom::visibility"],
+        json!({"visibility": "invisible"})
+    );
+    let mesh = &get("pavilion/Storey/Column 2/Body").attributes["usd::usdgeom::mesh"];
+    assert_eq!(mesh["points"].as_array().unwrap().len(), 8);
+    assert_eq!(mesh["faceVertexIndices"].as_array().unwrap().len(), 36);
+    assert_eq!(get("pavilion/Storey").children.len(), 3);
+
+    // -0.0 survives as written; upstream's JavaScript writes it as 0.
+    let rows = &get("column-2").attributes["usd::xformop"]["transform"];
+    let negative_zero = rows[1][2].as_f64().unwrap();
+    assert!(negative_zero == 0.0 && negative_zero.is_sign_negative());
+}
