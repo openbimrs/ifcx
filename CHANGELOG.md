@@ -8,6 +8,16 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `openbim-ifcx-geometry` builds a flat render scene from a composition
+  (`RenderScene::from_composition`, `from_root`): instances with node path,
+  world transform, `f32` render matrix, material, and bounds; shared `f32`
+  mesh (with vertex normals), line, and point buffers decoded once per shared
+  attribute value and instanced; a material table; `f64` world bounds; and a
+  render origin (`SceneOptions`, `Origin`) that keeps georeferenced models
+  precise. Invisible subtrees are left out, materials resolve through
+  ancestors, and malformed values become `SceneWarning`s. This completes
+  world transforms through the hierarchy (#3) and presentation resolution
+  (#7) (#8).
 - `scripts/upstream-parity.sh`: opt-in check that composes every example of a
   local buildingSMART/IFC5-development checkout (`IFCX_UPSTREAM_DIR`), and
   the crate's fixtures, with upstream's TypeScript (bundled from the checkout

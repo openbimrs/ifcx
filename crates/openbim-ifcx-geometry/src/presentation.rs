@@ -4,8 +4,8 @@
 //! attributes. The functions [`is_visible`], [`resolve_basic_material`], and
 //! [`resolve_mesh_material`] apply the precedence of the upstream reference
 //! viewer (`src/viewer/render.ts` at buildingSMART/IFC5-development
-//! `1a63082`) to a node and its ancestors. Walking the hierarchy is left to
-//! the caller, the render scene of the tracking issue.
+//! `1a63082`) to a node and its ancestors. [`crate::scene`] applies them
+//! while walking a composed tree, dropping invisible subtrees.
 //!
 //! | Attribute | Value |
 //! | --- | --- |
@@ -333,11 +333,11 @@ impl NodePresentation {
             .transpose()?;
         let diffuse_color = attributes
             .attribute(DIFFUSE_COLOR)
-            .map(|v| reals(v).ok_or_else(|| wrong(DIFFUSE_COLOR, "array of 3 numbers")))
+            .map(decode_diffuse_color)
             .transpose()?;
         let opacity = attributes
             .attribute(OPACITY)
-            .map(|v| real(v, OPACITY))
+            .map(decode_opacity)
             .transpose()?;
         let gltf_material = match attributes.attribute(GLTF_MATERIAL) {
             Some(v) => GltfMaterial::from_value(v)?,
@@ -350,6 +350,56 @@ impl NodePresentation {
             gltf_material,
         })
     }
+
+    /// Like [`from_attributes`](Self::from_attributes), but decodes each
+    /// attribute on its own: a malformed one is left `None` and reported
+    /// with its attribute id, and the others are still used.
+    pub(crate) fn from_attributes_lenient<A: Attributes + ?Sized>(
+        attributes: &A,
+        errors: &mut Vec<(&'static str, DecodeError)>,
+    ) -> Self {
+        fn keep<T>(
+            id: &'static str,
+            result: Result<Option<T>, DecodeError>,
+            errors: &mut Vec<(&'static str, DecodeError)>,
+        ) -> Option<T> {
+            result.unwrap_or_else(|e| {
+                errors.push((id, e));
+                None
+            })
+        }
+        let get = |id| attributes.attribute(id);
+        Self {
+            visibility: keep(
+                VISIBILITY,
+                get(VISIBILITY).map(Visibility::from_value).transpose(),
+                errors,
+            ),
+            diffuse_color: keep(
+                DIFFUSE_COLOR,
+                get(DIFFUSE_COLOR).map(decode_diffuse_color).transpose(),
+                errors,
+            ),
+            opacity: keep(
+                OPACITY,
+                get(OPACITY).map(decode_opacity).transpose(),
+                errors,
+            ),
+            gltf_material: keep(
+                GLTF_MATERIAL,
+                get(GLTF_MATERIAL).map_or(Ok(None), GltfMaterial::from_value),
+                errors,
+            ),
+        }
+    }
+}
+
+fn decode_diffuse_color(value: &Value) -> Result<[f32; 3], DecodeError> {
+    reals(value).ok_or_else(|| wrong(DIFFUSE_COLOR, "array of 3 numbers"))
+}
+
+fn decode_opacity(value: &Value) -> Result<f32, DecodeError> {
+    real(value, OPACITY)
 }
 
 /// Colour and opacity from `bsi::ifc::presentation`.

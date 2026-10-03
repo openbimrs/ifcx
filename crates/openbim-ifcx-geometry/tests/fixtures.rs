@@ -1,8 +1,8 @@
 //! Decodes the hand-written fixtures under `tests/fixtures`.
 //!
-//! Composition is not implemented yet, so the walk below follows `children`
-//! within a single file where every path has exactly one node. It stands in
-//! for the composed-tree walk of the render scene.
+//! The walk below follows `children` within a single file where every path
+//! has exactly one node, using only the per-node decoders. `tests/scene.rs`
+//! builds the same fixture through composition and the render scene.
 
 use std::collections::HashMap;
 
