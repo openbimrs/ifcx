@@ -1,0 +1,2 @@
+# Fuzz seeds are exact bytes (binary PCD and LZF data, base64 text).
+seeds/** -text
