@@ -1,0 +1,15 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx/fixtures/deletions",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.1",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [{ "uri": "openbimrs/ifcx/fixtures/wall-with-type" }],
+  "schemas": {},
+  "data": [
+    { "path": "f3a1c2d4-0000-4000-8000-000000000001", "children": { "Wall": null } },
+    { "path": "f3a1c2d4-0000-4000-8000-000000000002", "inherits": { "WallType": null }, "children": {}, "attributes": {} }
+  ]
+}
