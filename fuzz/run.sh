@@ -26,6 +26,9 @@ shift $(( $# < 2 ? $# : 2 ))
 
 # Read by rustup; must equal fuzz/rust-toolchain.toml.
 toolchain="$(sed -n 's/^channel = "\(.*\)"/\1/p' fuzz/rust-toolchain.toml)"
+# cargo-fuzz defaults to the triple it was built for; a prebuilt static
+# (musl) cargo-fuzz would pick musl, which ASan does not support.
+host="$(rustc "+$toolchain" -vV | sed -n 's/^host: //p')"
 
 seeds=()
 case "$target" in
@@ -39,7 +42,7 @@ mkdir -p "fuzz/corpus/$target"
 
 # Debug assertions turn integer overflow into a panic. -rss_limit_mb and -malloc_limit_mb turn unbounded allocation into a
 # finding; -timeout turns a hang or super-linear blow-up into one.
-exec cargo "+$toolchain" fuzz run --fuzz-dir fuzz -O --debug-assertions "$target" \
+exec cargo "+$toolchain" fuzz run --fuzz-dir fuzz --target "$host" -O --debug-assertions "$target" \
     "fuzz/corpus/$target" "${seeds[@]}" -- \
     -max_total_time="$seconds" -rss_limit_mb=2048 -malloc_limit_mb=1024 \
     -timeout=10 -max_len=65536 -dict=fuzz/ifcx.dict -print_final_stats=1 "$@"
