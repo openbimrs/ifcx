@@ -22,6 +22,13 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   rejects fractions and array `min`/`max` are enforced, unlike upstream;
   `Blob` values are accepted unchecked and `quantityKind` is not checked
   (#16).
+- `openbim-ifcx-geometry` decodes `ifcx_alpha` geometry attributes:
+  `usd::xformop` into an affine `Transform` (USD row-vector layout, `f64`)
+  with `world_from_parent` for hierarchy composition (#3, tree walk pending);
+  `usd::usdgeom::mesh` into a `TriangleMesh` with face normals (#4); and
+  `usd::usdgeom::basiscurves` into polylines, with non-linear curve types
+  reported as unsupported (#5). Malformed values return a typed
+  `DecodeError`.
 
 - Repository scaffold: `openbim-ifcx` crate with a status constant only,
   verification gate, pinned CI, and Dependabot for action pins.
@@ -40,3 +47,7 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - License changed from AGPL-3.0 to MIT before any code or release.
 - MSRV is 1.88, matching `openbim-ifc` and `openbim-step`.
+
+### Removed
+
+- `openbim_ifcx_geometry::PACKAGE_STATUS`, replaced by the decoders.

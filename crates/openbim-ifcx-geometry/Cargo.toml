@@ -9,11 +9,14 @@ repository = "https://github.com/openbimrs/ifcx"
 homepage = "https://github.com/openbimrs/ifcx"
 documentation = "https://docs.rs/openbim-ifcx-geometry"
 readme = "README.md"
-description = "Renderer-neutral geometry and viewer helpers for IFCX. Scaffold only; nothing is extracted yet."
+description = "Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: transforms, meshes, and curves."
 keywords = ["bim", "openbim", "ifcx", "geometry", "gltf"]
 categories = ["graphics", "rendering::data-formats"]
-# Not published until extraction exists; see docs/capabilities.md.
+# Not published until the render scene exists; see docs/capabilities.md.
 publish = false
 
 [dependencies]
 openbim-ifcx = { path = "../openbim-ifcx", version = "0.0.0" }
+# Attribute values are serde_json::Value in openbim-ifcx's public API; same
+# crate and version the core crate already pulls in.
+serde_json = "1"

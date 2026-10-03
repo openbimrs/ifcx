@@ -1,8 +1,23 @@
 # openbim-ifcx-geometry
 
-Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: world
-transforms, meshes, curves, point clouds, presentation, and GLB export. It is
-a scaffold: it exports only `PACKAGE_STATUS` and extracts nothing yet. See the
+Renderer-neutral geometry and viewer helpers for IFC5 / IFCX. It depends on
+`openbim-ifcx` and never on a renderer or GPU API.
+
+Implemented for the `ifcx_alpha` draft:
+
+| Module | Attribute | Result |
+| --- | --- | --- |
+| `transform` | `usd::xformop` | Affine `Transform` (USD row-vector layout, translation in the last row) and `world_from_parent` |
+| `mesh` | `usd::usdgeom::mesh` | `TriangleMesh`: positions, `u32` indices, flat face normals |
+| `curves` | `usd::usdgeom::basiscurves` | Linear `Polyline`s, or `Unsupported` for other curve types |
+
+Each decoder takes an attribute's `serde_json::Value` and returns a typed
+`DecodeError` for malformed input. Coordinates are `f64` because IFCX files
+carry georeferenced coordinates; convert to `f32` for rendering after
+applying world transforms.
+
+Planned: the render scene over a composed node tree, point clouds,
+presentation, and GLB export. See the
 [repository capabilities](https://github.com/openbimrs/ifcx/blob/main/docs/capabilities.md).
 
 Licensed under MIT.

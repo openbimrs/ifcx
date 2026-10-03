@@ -1,0 +1,43 @@
+{
+  "header": {
+    "id": "openbimrs/ifcx-geometry/fixtures/placed-storey",
+    "ifcxVersion": "ifcx_alpha",
+    "dataVersion": "1.0.0",
+    "author": "openbimrs contributors",
+    "timestamp": "2026-10-03"
+  },
+  "imports": [],
+  "schemas": {},
+  "data": [
+    {
+      "path": "site",
+      "children": {"Storey": "storey"},
+      "attributes": {
+        "usd::xformop": {"transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [100, 200, 0, 1]]}
+      }
+    },
+    {
+      "path": "storey",
+      "children": {"Wall": "wall", "Axis": "axis"},
+      "attributes": {
+        "usd::xformop": {"transform": [[0, 1, 0, 0], [-1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 3, 1]]}
+      }
+    },
+    {
+      "path": "wall",
+      "attributes": {
+        "usd::usdgeom::mesh": {
+          "points": [[0, 0, 0], [2, 0, 0], [0, 0, 3]],
+          "faceVertexIndices": [0, 1, 2]
+        }
+      }
+    },
+    {
+      "path": "axis",
+      "attributes": {
+        "usd::xformop": {"transform": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, 1]]},
+        "usd::usdgeom::basiscurves": {"points": [[0, 0, 0], [4, 0, 0]]}
+      }
+    }
+  ]
+}

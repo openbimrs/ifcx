@@ -52,6 +52,7 @@ name = "openbim-ifcx-geometry"
 version = "0.0.0"
 dependencies = [
  "openbim-ifcx",
+ "serde_json",
 ]
 
 [[package]]
