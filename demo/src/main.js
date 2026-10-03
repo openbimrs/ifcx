@@ -35,6 +35,7 @@ const fetchToggle = $("fetch-imports");
 
 function setStatus(text, error = false) {
   statusEl.textContent = text;
+  statusEl.title = text;
   statusEl.classList.toggle("error", error);
 }
 
@@ -100,7 +101,12 @@ function fitToBounds(object) {
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const radius = Math.max(size.length() / 2, 1e-3);
-  const distance = (1.1 * radius) / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2);
+  // Fit the narrower of the two fields of view, so a portrait phone screen
+  // frames the model as well as a landscape window does.
+  resize();
+  const vertical = THREE.MathUtils.degToRad(camera.fov);
+  const horizontal = 2 * Math.atan(Math.tan(vertical / 2) * camera.aspect);
+  const distance = (1.1 * radius) / Math.sin(Math.min(vertical, horizontal) / 2);
   const direction = new THREE.Vector3(1, 0.7, 1.2).normalize();
   camera.position.copy(center).addScaledVector(direction, distance);
   camera.near = distance / 1000;
@@ -314,7 +320,30 @@ function renderValidation(report, notes) {
     }
   }
   validationEl.replaceChildren(...items);
+  const badge = $("failure-badge");
+  const failures = (report?.valid === false ? report.failures.length : 0) + notes.length;
+  badge.hidden = failures === 0;
+  badge.textContent = String(failures);
 }
+
+// ------------------------------------------------------- bottom sheet (#62)
+
+// On narrow screens the panels live in a bottom sheet; a tab opens one, and
+// tapping the open tab closes it again. Wide screens show both panels and
+// never set `data-sheet`.
+const narrow = window.matchMedia("(max-width: 800px)");
+const sheetTabs = [...document.querySelectorAll("#sheet-tabs button")];
+
+function openSheet(name) {
+  if (name === undefined) delete document.body.dataset.sheet;
+  else document.body.dataset.sheet = name;
+  for (const tab of sheetTabs) tab.setAttribute("aria-expanded", String(tab.dataset.sheet === name));
+}
+
+for (const tab of sheetTabs) {
+  tab.addEventListener("click", () => openSheet(document.body.dataset.sheet === tab.dataset.sheet ? undefined : tab.dataset.sheet));
+}
+narrow.addEventListener("change", () => openSheet(undefined));
 
 // ----------------------------------------------------------------- loading
 
@@ -423,7 +452,9 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   down = [event.clientX, event.clientY];
 });
 renderer.domElement.addEventListener("pointerup", (event) => {
-  if (!down || !model || Math.hypot(event.clientX - down[0], event.clientY - down[1]) > 4) return;
+  // A finger moves a little even on a tap.
+  const slop = event.pointerType === "mouse" ? 4 : 10;
+  if (!down || !model || Math.hypot(event.clientX - down[0], event.clientY - down[1]) > slop) return;
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
@@ -435,6 +466,7 @@ renderer.domElement.addEventListener("pointerup", (event) => {
   let object = hit?.object;
   while (object && object.userData.ifcxNode === undefined) object = object.parent;
   select(object ? ifcxPath(object) : undefined);
+  if (object && narrow.matches) openSheet("info");
 });
 
 $("file").addEventListener("change", (event) => readFiles(event.target.files));

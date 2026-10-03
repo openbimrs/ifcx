@@ -141,6 +141,28 @@ aside {
   display: block;
   width: 100%;
   height: 100%;
+  /* Drags orbit the model instead of scrolling the page. */
+  touch-action: none;
+}
+
+#sheet-tabs {
+  display: none;
+}
+
+.badge[hidden] {
+  display: none;
+}
+
+.badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
 }
 
 #viewport.dragging {
@@ -264,20 +286,123 @@ pre {
   font-size: 12px;
 }
 
+/* Phones and narrow windows: a compact bar, the 3D view filling the screen,
+   and the panels in a bottom sheet behind tabs (#62). */
 @media (max-width: 800px) {
+  html,
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+
+  h1 {
+    font-size: 16px;
+  }
+
+  .tagline,
+  .sample .label-text {
+    display: none;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    margin-top: 6px;
+  }
+
+  .sample,
+  .sample select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  select {
+    margin: 0;
+    padding: 6px 4px;
+    text-overflow: ellipsis;
+  }
+
+  #status {
+    grid-column: 1 / -1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+
   main {
-    grid-template-columns: 1fr;
-    grid-template-rows: 55vh auto auto;
+    display: flex;
+    flex-direction: column;
   }
 
   #viewport {
-    order: -1;
+    flex: 1 1 auto;
   }
 
   #tree-panel,
   #info-panel {
+    display: none;
+    order: 1;
+    flex: 0 0 auto;
+    height: 45dvh;
     border: 0;
     border-top: 1px solid var(--border);
-    max-height: 40vh;
+  }
+
+  body[data-sheet="tree"] #tree-panel,
+  body[data-sheet="info"] #info-panel {
+    display: block;
+  }
+
+  #sheet-tabs {
+    display: flex;
+    order: 2;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  #sheet-tabs button {
+    flex: 1;
+    min-height: 44px;
+    border: 0;
+    border-top: 2px solid transparent;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 600;
+  }
+
+  #sheet-tabs button[aria-expanded="true"] {
+    border-top-color: var(--accent);
+    color: var(--text);
+  }
+}
+
+/* Touch screens: no drag and drop, and larger tap targets. */
+@media (pointer: coarse) {
+  #drop-hint {
+    display: none;
+  }
+
+  .button {
+    padding: 8px 14px;
+  }
+
+  .tree .row {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
   }
 }
