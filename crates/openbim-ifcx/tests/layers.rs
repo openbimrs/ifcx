@@ -36,8 +36,27 @@ fn attribute(file: &IfcxFile, path: &str, name: &str) -> Value {
     (*flatten(&file.data)[path].attributes[name]).clone()
 }
 
+/// The `demo::value` that wins at `root` when `main` is federated.
+fn winner(layers: &[(&str, &[&str])]) -> Value {
+    let stack = LayerStackBuilder::new(resolver(layers))
+        .build("main")
+        .unwrap();
+    attribute(&stack.federate(), "root", "demo::value")
+}
+
+/// A `main` layer importing `imports`, with no schemas and no data.
+fn empty_main(imports: &[&str]) -> String {
+    let imports: Vec<Value> = imports.iter().map(|uri| json!({ "uri": uri })).collect();
+    json!({
+        "header": {"id": "main", "ifcxVersion": "ifcx_alpha", "dataVersion": "1.0.0",
+                   "author": "openbimrs contributors", "timestamp": "2026-10-03"},
+        "imports": imports, "schemas": {}, "data": []
+    })
+    .to_string()
+}
+
 #[test]
-fn imports_follow_the_main_layer_and_nest_before_siblings() {
+fn every_layer_follows_its_imports_and_the_main_layer_comes_last() {
     let mut builder = LayerStackBuilder::new(resolver(&[
         ("main", &["a", "b"]),
         ("a", &["c"]),
@@ -45,15 +64,80 @@ fn imports_follow_the_main_layer_and_nest_before_siblings() {
         ("c", &[]),
     ]));
     let stack = builder.build("main").unwrap();
-    assert_eq!(keys(&stack), ["main", "a", "c", "b"]);
+    assert_eq!(keys(&stack), ["c", "a", "b", "main"]);
     assert_eq!(stack.main().key(), "main");
     assert_eq!(stack.layers()[1].file().header.id, "a");
+
+    let mut builder =
+        LayerStackBuilder::new(resolver(&[("main", &["a"]), ("a", &["b"]), ("b", &[])]));
+    assert_eq!(keys(&builder.build("main").unwrap()), ["b", "a", "main"]);
 }
 
 #[test]
-fn a_layer_imported_twice_loads_once_where_first_claimed() {
-    // `main` claims `a` and `b` before descending, so `b` stays after `a`'s
-    // subtree even though `a` imports it too.
+fn federation_takes_the_main_layers_header_and_every_layers_data() {
+    let mut builder =
+        LayerStackBuilder::new(resolver(&[("main", &["a", "b"]), ("a", &[]), ("b", &[])]));
+    let federated = builder.build("main").unwrap().federate();
+    assert_eq!(federated.header.id, "main");
+    assert!(federated.imports.is_empty());
+    assert_eq!(federated.data.len(), 3);
+    assert_eq!(attribute(&federated, "root", "demo::value"), "main");
+}
+
+#[test]
+fn a_layer_overrides_the_layers_it_imports() {
+    // buildingSMART/IFC5-development#144: imported data comes first.
+    assert_eq!(winner(&[("main", &["a"]), ("a", &[])]), "main");
+    assert_eq!(
+        winner(&[("main", &["a"]), ("a", &["b"]), ("b", &[])]),
+        "main"
+    );
+}
+
+#[test]
+fn an_import_overrides_the_layers_it_imports() {
+    // `main` sets nothing, so `a` wins over its own import `b`.
+    let mut resolver = resolver(&[("a", &["b"]), ("b", &[])]);
+    resolver.insert("main", empty_main(&["a"]));
+    let stack = LayerStackBuilder::new(resolver).build("main").unwrap();
+    assert_eq!(keys(&stack), ["b", "a", "main"]);
+    let federated = stack.federate();
+    assert_eq!(federated.header.id, "main");
+    assert_eq!(attribute(&federated, "root", "demo::value"), "a");
+}
+
+#[test]
+fn a_later_sibling_import_overrides_an_earlier_one() {
+    let mut resolver = resolver(&[("a", &[]), ("b", &[])]);
+    resolver.insert("main", empty_main(&["a", "b"]));
+    let stack = LayerStackBuilder::new(resolver.clone())
+        .build("main")
+        .unwrap();
+    assert_eq!(keys(&stack), ["a", "b", "main"]);
+    assert_eq!(attribute(&stack.federate(), "root", "demo::value"), "b");
+
+    resolver.insert("main", empty_main(&["b", "a"]));
+    let stack = LayerStackBuilder::new(resolver).build("main").unwrap();
+    assert_eq!(keys(&stack), ["b", "a", "main"]);
+    assert_eq!(attribute(&stack.federate(), "root", "demo::value"), "a");
+}
+
+#[test]
+fn a_diamond_loads_its_shared_import_once_before_both_importers() {
+    let mut resolver = resolver(&[("a", &["c"]), ("b", &["c"]), ("c", &[])]);
+    resolver.insert("main", empty_main(&["a", "b"]));
+    let stack = LayerStackBuilder::new(resolver).build("main").unwrap();
+    assert_eq!(keys(&stack), ["c", "a", "b", "main"]);
+    let federated = stack.federate();
+    assert_eq!(federated.data.len(), 3);
+    assert_eq!(attribute(&federated, "root", "demo::value"), "b");
+}
+
+#[test]
+fn a_layer_imported_twice_loads_once_where_first_reached() {
+    // `a` imports `b` too, so `b` is placed under `a`, before it: a layer
+    // always overrides what it imports. `main`'s later import of `b` does
+    // not move it.
     let mut builder = LayerStackBuilder::new(resolver(&[
         ("main", &["a", "b"]),
         ("a", &["b", "c"]),
@@ -61,13 +145,15 @@ fn a_layer_imported_twice_loads_once_where_first_claimed() {
         ("c", &[]),
     ]));
     let stack = builder.build("main").unwrap();
-    assert_eq!(keys(&stack), ["main", "a", "c", "b"]);
+    assert_eq!(keys(&stack), ["c", "b", "a", "main"]);
 }
 
 #[test]
-fn reproduces_upstream_layer_order_with_cycles_allowed() {
+fn cycles_allowed_skip_the_closing_import_and_keep_the_main_layer_last() {
     // The import graph of upstream's `layer-stack-test.ts` order tests, where
-    // `file2` imports `file1` back.
+    // `file2` imports `file1` back. The import that closes the cycle names a
+    // layer still being loaded; it is skipped, so that layer overrides the
+    // importer closing the cycle.
     let layers: &[(&str, &[&str])] = &[
         ("file1", &["file2", "file3", "file4"]),
         ("file2", &["file4", "file3", "file1"]),
@@ -75,14 +161,21 @@ fn reproduces_upstream_layer_order_with_cycles_allowed() {
         ("file4", &[]),
     ];
     let mut builder = LayerStackBuilder::new(resolver(layers)).allow_cycles(true);
-    assert_eq!(
-        keys(&builder.build("file1").unwrap()),
-        ["file1", "file2", "file3", "file4"]
-    );
+    let stack = builder.build("file1").unwrap();
+    assert_eq!(keys(&stack), ["file4", "file3", "file2", "file1"]);
+    assert_eq!(stack.main().key(), "file1");
     assert_eq!(
         keys(&builder.build("file2").unwrap()),
-        ["file2", "file4", "file3", "file1"]
+        ["file4", "file3", "file1", "file2"]
     );
+
+    let mut builder =
+        LayerStackBuilder::new(resolver(&[("main", &["a"]), ("a", &["main"])])).allow_cycles(true);
+    let stack = builder.build("main").unwrap();
+    assert_eq!(keys(&stack), ["a", "main"]);
+    assert_eq!(attribute(&stack.federate(), "root", "demo::value"), "main");
+    let mut builder = LayerStackBuilder::new(resolver(&[("main", &["main"])])).allow_cycles(true);
+    assert_eq!(keys(&builder.build("main").unwrap()), ["main"]);
 
     let err = LayerStackBuilder::new(resolver(layers))
         .build("file1")
@@ -94,14 +187,18 @@ fn reproduces_upstream_layer_order_with_cycles_allowed() {
 }
 
 #[test]
-fn later_layers_win_so_imports_override_their_importer() {
-    let mut builder =
-        LayerStackBuilder::new(resolver(&[("main", &["a", "b"]), ("a", &[]), ("b", &[])]));
-    let federated = builder.build("main").unwrap().federate();
-    assert_eq!(federated.header.id, "main");
-    assert!(federated.imports.is_empty());
-    assert_eq!(federated.data.len(), 3);
-    assert_eq!(attribute(&federated, "root", "demo::value"), "b");
+fn a_long_import_chain_does_not_recurse() {
+    const DEPTH: usize = 20_000;
+    let mut resolver = MemoryResolver::new();
+    for i in 0..DEPTH {
+        let next = format!("l{}", i + 1);
+        let imports: &[&str] = if i + 1 < DEPTH { &[&next] } else { &[] };
+        resolver.insert(format!("l{i}"), layer(&format!("l{i}"), imports, "x"));
+    }
+    let stack = LayerStackBuilder::new(resolver).build("l0").unwrap();
+    assert_eq!(stack.layers().len(), DEPTH);
+    assert_eq!(stack.main().key(), "l0");
+    assert_eq!(stack.layers()[0].key(), format!("l{}", DEPTH - 1));
 }
 
 #[test]
@@ -116,22 +213,44 @@ fn federate_matches_upstream_for_files_in_given_order() {
         attribute(&federate([&b, &a]).unwrap(), "root", "demo::value"),
         "a"
     );
+    // The last file is the strongest and gives the header.
+    assert_eq!(federate([&a, &b]).unwrap().header.id, "b");
+    assert_eq!(federate_owned([b, a]).unwrap().header.id, "a");
     assert!(federate([]).is_none());
 }
 
 #[test]
 fn build_all_stacks_named_layers_like_a_synthetic_main_layer() {
     let layers: &[(&str, &[&str])] = &[("a", &["c"]), ("b", &["a"]), ("c", &[])];
-    // Each named layer claims its place before any import is followed, so
-    // `b`'s import of `a` does not move `a`, and `a`'s import `c` follows it.
+    // Each named layer follows its imports; `b`'s import of `a` does not move
+    // `a`, which is already placed, and naming `a` again does not either.
     let stack = LayerStackBuilder::new(resolver(layers))
         .build_all(["a", "b", "a"])
         .unwrap();
-    assert_eq!(keys(&stack), ["a", "c", "b"]);
-    assert_eq!(stack.main().key(), "a");
+    assert_eq!(keys(&stack), ["c", "a", "b"]);
+    assert_eq!(stack.main().key(), "b");
     let federated = stack.federate();
-    assert_eq!(federated.header.id, "a");
+    assert_eq!(federated.header.id, "b");
     assert_eq!(attribute(&federated, "root", "demo::value"), "b");
+
+    // The last named layer wins, as below a synthetic main layer.
+    let plain: &[(&str, &[&str])] = &[("x", &[]), ("y", &[]), ("z", &[])];
+    for order in [["x", "y", "z"], ["z", "y", "x"], ["y", "z", "x"]] {
+        let stack = LayerStackBuilder::new(resolver(plain))
+            .build_all(order)
+            .unwrap();
+        assert_eq!(keys(&stack), order);
+        assert_eq!(
+            attribute(&stack.federate(), "root", "demo::value"),
+            order[2]
+        );
+    }
+    // A named layer that an earlier one imports is placed under that one,
+    // which overrides it.
+    let stack = LayerStackBuilder::new(resolver(layers))
+        .build_all(["b", "c"])
+        .unwrap();
+    assert_eq!(keys(&stack), ["c", "a", "b"]);
 
     let err = LayerStackBuilder::new(resolver(layers))
         .build_all(["b", "gone"])
@@ -209,26 +328,27 @@ fn a_stack_validates_against_schemas_only_its_imports_define() {
 
 #[test]
 fn a_stack_checks_only_the_value_that_wins_for_a_path() {
-    // `main` writes a string, its import `fix` overrides it with a number,
-    // and `schemas` says the value is `Real`.
+    // `fix` writes a string, `main`, which imports it, overrides it with a
+    // number, and `schemas` says the value is `Real`.
     let mut resolver = MemoryResolver::new();
     resolver.insert(
         "main",
-        height_layer("main", &["fix", "schemas"], json!("tall")),
+        height_layer("main", &["fix", "schemas"], json!(3.0)),
     );
-    resolver.insert("fix", height_layer("fix", &[], json!(3.0)));
+    resolver.insert("fix", height_layer("fix", &[], json!("tall")));
     resolver.insert("schemas", schema_layer("schemas"));
     let stack = LayerStackBuilder::new(resolver.clone())
         .build("main")
         .unwrap();
     assert_eq!(stack.validate(), Ok(()));
 
-    // Reversed: the import's string wins and is reported once, at its path.
+    // Reversed: the main layer's string wins and is reported once, at its
+    // path.
     resolver.insert(
         "main",
-        height_layer("main", &["fix", "schemas"], json!(3.0)),
+        height_layer("main", &["fix", "schemas"], json!("tall")),
     );
-    resolver.insert("fix", height_layer("fix", &[], json!("tall")));
+    resolver.insert("fix", height_layer("fix", &[], json!(3.0)));
     let stack = LayerStackBuilder::new(resolver).build("main").unwrap();
     let report = stack.validate().unwrap_err();
     assert_eq!(report.failures.len(), 1, "{report}");
@@ -348,8 +468,8 @@ mod fs {
             .build(&fixture("chain/main.ifcx"))
             .unwrap();
         let names: Vec<_> = stack.keys().map(file_name).collect();
-        assert_eq!(names, ["main.ifcx", "mid.ifcx", "base.ifcx"]);
-        assert!(stack.layers()[2].key().ends_with("sub/base.ifcx"));
+        assert_eq!(names, ["base.ifcx", "mid.ifcx", "main.ifcx"]);
+        assert!(stack.layers()[0].key().ends_with("sub/base.ifcx"));
 
         let federated = stack.federate();
         assert_eq!(federated.header, stack.main().file().header);
@@ -357,28 +477,28 @@ mod fs {
             federated.schemas.keys().collect::<Vec<_>>(),
             [
                 "demo::fire",
-                "demo::name",
+                "demo::height",
                 "demo::thickness",
-                "demo::height"
+                "demo::name"
             ]
         );
-        // Position from `main`, value from `base`, the last layer defining it.
+        // Position from `base`, value from `main`, the last layer defining it.
         assert_eq!(
             federated.schemas["demo::fire"].value.data_type.as_str(),
-            "Enum"
+            "String"
         );
         let paths: Vec<_> = federated.data.iter().map(|n| n.path.as_str()).collect();
-        assert_eq!(paths, ["wall", "site", "wall", "storey", "wall", "storey"]);
+        assert_eq!(paths, ["wall", "storey", "wall", "storey", "wall", "site"]);
 
         let nodes = openbim_ifcx::flatten(&federated.data);
         let wall = &nodes["wall"].attributes;
-        assert_eq!(*wall["demo::fire"], "EI90", "the deepest import wins");
+        assert_eq!(*wall["demo::fire"], "EI30", "the main layer wins");
         assert_eq!(*wall["demo::name"], "Wall 1");
         assert_eq!(*wall["demo::thickness"], 0.2);
         assert_eq!(*wall["demo::height"], 3.0);
-        // `mid` deletes `Door`, but `base`, which `mid` imports, comes later
-        // and adds it back.
-        assert_eq!(nodes["storey"].children["Door"].as_deref(), Some("door"));
+        // `base` defines `Door`, and `mid`, which imports it, deletes it.
+        assert_eq!(nodes["storey"].children["Door"], None);
+        assert_eq!(nodes["storey"].children["Wall"].as_deref(), Some("wall"));
     }
 
     #[cfg(feature = "integrity")]
@@ -390,14 +510,22 @@ mod fs {
             .unwrap();
         assert_eq!(stack.validate(), Ok(()));
 
-        // Naming `base` before `main` puts it first; `main`'s imports still
-        // follow `main` and win.
+        // Naming `base` before `main` places it first; `mid` follows it
+        // without loading it again, and `main` comes last and wins.
         let stack = LayerStackBuilder::new(FsResolver::new())
-            .build_all([fixture("chain/sub/base.ifcx"), main])
+            .build_all([fixture("chain/sub/base.ifcx"), main.clone()])
             .unwrap();
         let names: Vec<_> = stack.keys().map(file_name).collect();
-        assert_eq!(names, ["base.ifcx", "main.ifcx", "mid.ifcx"]);
+        assert_eq!(names, ["base.ifcx", "mid.ifcx", "main.ifcx"]);
         assert_eq!(stack.validate(), Ok(()));
+
+        // Naming `base` after `main` cannot move it: `mid` imports it, so it
+        // was placed before `mid`, and `main` stays the strongest.
+        let stack = LayerStackBuilder::new(FsResolver::new())
+            .build_all([main, fixture("chain/sub/base.ifcx")])
+            .unwrap();
+        let names: Vec<_> = stack.keys().map(file_name).collect();
+        assert_eq!(names, ["base.ifcx", "mid.ifcx", "main.ifcx"]);
     }
 
     #[test]
@@ -415,7 +543,8 @@ mod fs {
             .allow_cycles(true)
             .build(&fixture("cycle/a.ifcx"))
             .unwrap();
-        assert_eq!(stack.layers().len(), 2);
+        let names: Vec<_> = stack.keys().map(file_name).collect();
+        assert_eq!(names, ["b.ifcx", "a.ifcx"]);
     }
 
     #[test]

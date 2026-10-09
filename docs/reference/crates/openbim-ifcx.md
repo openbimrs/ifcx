@@ -31,8 +31,8 @@ failure with its node path, attribute id, and JSON pointer
 (`LayerStackBuilder::build` for one main layer, `build_all` for several
 layers stacked as upstream's `ifcx compose` does), validates the stack
 against the schemas of all its layers (`LayerStack::validate`), and
-federates schemas and data in upstream order; in that order an imported
-layer overrides the layer that imports it. `flatten_owned` and
+federates schemas and data with every layer after the layers it imports,
+so a layer overrides its imports (buildingSMART/IFC5-development#144). `flatten_owned` and
 `LayerStack::into_federated` move nodes and attribute values instead of
 copying them, which makes flattening large models several times faster
 than `flatten` over borrowed nodes. The composed tree shares sub-trees between instances
@@ -114,6 +114,40 @@ The crate root, as rustdoc shows it. Follow a name to its rustdoc entry.
 - Used by [`openbim-ifcx-geometry`](./openbim-ifcx-geometry), [`openbim-ifcx-binding-core`](./openbim-ifcx-binding-core)
 
 ## Changes
+
+Unreleased, on `main`:
+
+#### Changed
+
+- **Breaking:** a layer now overrides the layers it imports, as agreed
+  upstream in buildingSMART/IFC5-development#144 (2026-10-05): "imported
+  data should come 'before' the main data". `LayerStackBuilder` returns the
+  layers in federation order: every layer after its own imports,
+  recursively; sibling imports in written order, so a later import
+  overrides an earlier one; each layer once, where it is first reached; the
+  main layer last. `main → [a, b]`, `a → [c]` now gives `c, a, b, main`
+  (was `main, a, c, b`), and `main → a → b` gives `b, a, main` (was
+  `main, a, b`). Code relying on the old order, in which an import
+  overrode its importer and the main layer had the lowest priority, now
+  composes and validates differently whenever an import carries `data` or
+  redefines a schema. Upstream's code at `1a63082` still uses the old order
+  until a pending upstream pull request lands (#36).
+- **Breaking:** `LayerStack::layers`, `keys` and `into_layers` return the
+  federation order, so the main layer is last, not first;
+  `LayerStack::main` still returns the main layer. For `build_all`, `main`
+  is now the last layer of the stack, the strongest named one (was the
+  first named one), and the federated header is its header (#36).
+- **Breaking:** `federate` and `federate_owned` take the header of the last
+  file, the strongest, instead of the first; schemas and data are merged as
+  before. `LayerStack::federate` and `into_federated` thus keep the main
+  layer's header (#36).
+- `LayerStackBuilder::allow_cycles(true)` skips the import that closes a
+  cycle, as before; under the new order the layer that import names comes
+  after its importer, and the main layer stays last (`main → a → main`
+  gives `a, main`) (#36).
+- `LayerStackBuilder` walks imports without recursion, so a long import
+  chain cannot overflow the stack. `integrity` is still checked on every
+  import edge (#36).
 
 Latest release, 0.1.1 (2026-10-03):
 

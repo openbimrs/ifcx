@@ -145,10 +145,11 @@ for (const name of readdirSync(fixturesDir).filter((n) => n.endsWith(".ifcx")).s
   cases.push({ name: `fixtures/${name}`, files: fixture(name) });
 }
 cases.push({ name: "fixtures/layer-base.ifcx + layer-edit.ifcx", files: fixture("layer-base.ifcx", "layer-edit.ifcx") });
-// Upstream layer order for main → mid → sub/base: the main layer first.
+// Federation order for main → mid → sub/base: every layer after its imports,
+// the main layer last (buildingSMART/IFC5-development#144).
 cases.push({
-  name: "fixtures/layers/chain (main, mid, sub/base)",
-  files: fixture("layers/chain/main.ifcx", "layers/chain/mid.ifcx", "layers/chain/sub/base.ifcx"),
+  name: "fixtures/layers/chain (sub/base, mid, main)",
+  files: fixture("layers/chain/sub/base.ifcx", "layers/chain/mid.ifcx", "layers/chain/main.ifcx"),
 });
 
 const counts = { MATCH: 0, KNOWN: 0, DIFF: 0 };

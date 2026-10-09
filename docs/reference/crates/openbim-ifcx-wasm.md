@@ -155,9 +155,9 @@ schemas and data are concatenated in order, as upstream's `Federate` does.
 With `options.imports` (an object or a `Map` from the exact import `uri` to
 a file), the layers become the imports of a synthetic main layer, as
 upstream's `ifcx compose` command builds it, and every import must be
-supplied. `integrity` values are checked against the supplied bytes. In
-upstream order an import overrides the layer that imports it, and a later
-layer overrides both. The WebAssembly module never touches the network or
+supplied. `integrity` values are checked against the supplied bytes. A
+layer overrides the layers it imports, as agreed upstream in
+buildingSMART/IFC5-development#144, and a later layer overrides both. The WebAssembly module never touches the network or
 the filesystem.
 
 **Fetching imports.** `fetchImports(layers, options?)` collects them for
@@ -280,6 +280,18 @@ MIT, like the rest of `openbimrs/ifcx`.
 - Depends on [`openbim-ifcx-binding-core`](./openbim-ifcx-binding-core)
 
 ## Changes
+
+Unreleased, on `main`:
+
+#### Changed
+
+- **Breaking:** with imports resolved, a layer now overrides the layers it
+  imports, as agreed upstream in buildingSMART/IFC5-development#144 (was:
+  an import overrode the layer importing it). `compose`, `validate` and
+  GLB export give different results when an import carries `data` or
+  redefines a schema that a layer also sets. Layers given without imports,
+  and imports that carry only schemas, compose as before; a later layer
+  still overrides an earlier one and everything it imports (#36).
 
 Latest release, 0.2.1 (2026-10-03):
 

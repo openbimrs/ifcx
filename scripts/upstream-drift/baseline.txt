@@ -17,5 +17,5 @@ layers:   unresolved   4x https://ifcx.dev/@standards.buildingsmart.org/ifc/ifc-
 decode: 47 files: 41840 transforms; 1925 meshes (720241 triangles, 522435 vertices); 85 curve attributes (85 polylines, 9946 vertices, 0 unsupported); 0 null deletions; 0 failures
 decode: 47 files: point clouds pcd 2, array 4, base64 2 (102761 points, 4 coloured); visibility 62, diffuseColor 9366, opacity 458, gltf::material 2 (2 PBR); 0 failures
 scene: 47 files: 26218 instances, 4181777 triangles, 9884 segments, 102761 points, 0 warnings
-parity: 59 cases: 55 match, 4 known divergences, 0 differ
+parity: 59 cases: 56 match, 3 known divergences, 0 differ
 gltf: 51 files: 0 errors, 0 warnings, 16 infos, 0 hints

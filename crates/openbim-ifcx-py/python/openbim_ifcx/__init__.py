@@ -130,8 +130,8 @@ def compose(
     data are concatenated in order. With ``imports`` (a mapping from the
     exact import ``uri`` to a file, possibly empty), the layers become the
     imports of a synthetic main layer, as upstream's ``ifcx compose`` builds
-    it, and every import must be supplied. In upstream order an import
-    overrides the layer that imports it.
+    it, and every import must be supplied. A layer overrides the layers it
+    imports, and a later layer overrides both.
 
     Raises :class:`IfcxError` with ``code`` ``read``, ``layer``, ``compose``
     or ``invalid-argument``.

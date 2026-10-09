@@ -45,9 +45,9 @@ is a `ComposeError`.
 <<< ../../crates/openbim-ifcx-geometry/tests/guide.rs#imports{rust}
 
 This needs the `fs` feature (`cargo add openbim-ifcx --features fs`). The
-stack loads in upstream's order, in which an import overrides the layer
-that imports it; [Capabilities](/capabilities#layer-order-and-import-priority)
-explains why. `build_all` stacks several files the way upstream's
+stack lists every layer after the layers it imports, so a layer overrides
+its imports and the main layer wins;
+[Capabilities](/capabilities#layer-order-and-import-priority) explains why. `build_all` stacks several files the way upstream's
 `ifcx compose` does.
 
 ## Export GLB

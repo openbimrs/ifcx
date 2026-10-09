@@ -17,8 +17,7 @@
 //! - `--resolve-imports`: load the `imports` of every layer, recursively,
 //!   through `openbim_ifcx::layers::FsResolver`, as upstream's `ifcx compose`
 //!   does: the layers become the imports of a main layer without data, so
-//!   each layer's imports override that layer and the next layer overrides
-//!   both. A relative import resolves against the importing file's
+//!   each layer overrides its imports and the next layer overrides both. A relative import resolves against the importing file's
 //!   directory. Without this option imports are ignored; `ifcx_alpha`
 //!   examples import only schema files, which carry no `data`.
 //! - `--mirror PREFIX=DIR` (repeatable, implies `--resolve-imports`): load

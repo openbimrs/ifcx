@@ -9,6 +9,13 @@ repository.
 
 ## [Unreleased]
 
+### Changed
+
+- `ifcx2glb --resolve-imports` stacks each layer after the layers it
+  imports, following `openbim-ifcx`'s new layer order
+  (buildingSMART/IFC5-development#144), so a layer overrides its imports.
+  The library API is unchanged (#36).
+
 ## [0.1.1] - 2026-10-03
 
 No breaking change. Requires `openbim-ifcx` 0.1.1.

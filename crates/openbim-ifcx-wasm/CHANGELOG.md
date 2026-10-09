@@ -9,6 +9,16 @@ repository.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** with imports resolved, a layer now overrides the layers it
+  imports, as agreed upstream in buildingSMART/IFC5-development#144 (was:
+  an import overrode the layer importing it). `compose`, `validate` and
+  GLB export give different results when an import carries `data` or
+  redefines a schema that a layer also sets. Layers given without imports,
+  and imports that carry only schemas, compose as before; a later layer
+  still overrides an earlier one and everything it imports (#36).
+
 ## [0.2.1] - 2026-10-03
 
 ### Changed
