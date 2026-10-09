@@ -47,9 +47,9 @@ cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- \
 ```
 
 Without `--resolve-imports`, `imports` are ignored. With it, every layer's
-imports load through `openbim_ifcx::layers::FsResolver`, in upstream order
-(each layer's imports override it, the next layer overrides both); nothing
-is fetched from the network.
+imports load through `openbim_ifcx::layers::FsResolver`, each layer after
+the layers it imports (a layer overrides its imports, the next layer
+overrides both); nothing is fetched from the network.
 
 `scripts/gltf-validate.sh` (opt-in, needs Node.js) exports the fixtures and,
 with `IFCX_UPSTREAM_DIR`, every upstream example, and checks them with the

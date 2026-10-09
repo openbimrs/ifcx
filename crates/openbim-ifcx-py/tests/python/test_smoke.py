@@ -104,8 +104,8 @@ class Composition(unittest.TestCase):
 
     def test_imports_resolve_from_memory(self):
         imports = {"model.ifcx": data("geometry-model.ifcx")}
-        # In upstream order an import overrides the layer importing it.
-        self.assertEqual(roof_class(compose([overlay(["model.ifcx"])], imports=imports)), "Slab")
+        # A layer overrides the layers it imports (buildingSMART/IFC5-development#144).
+        self.assertEqual(roof_class(compose([overlay(["model.ifcx"])], imports=imports)), "Roof")
         self.assertEqual(roof_class(compose([overlay(["model.ifcx"]), overlay()], imports)), "Roof")
         self.assertTrue(validate([overlay(["model.ifcx"])], imports)["valid"])
         chain = {"mid.ifcx": data("layers/chain/mid.ifcx"),

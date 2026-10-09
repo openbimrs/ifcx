@@ -20,7 +20,7 @@ pinned to the revision it names until it is re-recorded.
 | Flatten layered nodes by path | implemented | `ifcx_alpha` | `openbim-ifcx` | `flatten`, upstream `FlattenCompositionInput` (`1a63082`): later nodes win for children and attributes, `null` inherits remove, `null` children are kept for composition. Keys keep insertion order; upstream's JavaScript objects list integer-like keys first. `flatten_owned` consumes the nodes and moves attribute values into the shared `Arc`s instead of copying them: in the opt-in `upstream_composition` test (release build) flattening `Tekla House` takes 18 ms instead of 88 ms and `Railway_project_IFC5` 8 ms instead of 60 ms |
 | Compose layers into a resolved node tree | implemented | `ifcx_alpha` | `openbim-ifcx` | `compose`, upstream `ComposeNode`/`CreateArtificialRoot` (`1a63082`): `inherits` expansion, `head/a/b` references, `null` child deletion, local attributes over inherited, `head/a` paths editing children, artificial root over all roots. Sub-trees are shared through `Arc` and copied only along edited paths; no recursion per tree level. Cycles and unknown references are typed errors; cycles and roots use reference heads, as upstream's `TODO` asks (upstream misses cycles through `head/a` and overflows the stack), and a reference to a missing node is an error where upstream composes an empty node. The opt-in `upstream_composition` test composes all 47 upstream examples: 35 alone and 12 overlays on top of their example folder. `scripts/upstream-parity.sh` checks the composed trees equal to upstream's TypeScript for all 47 (`1a63082`); see [Upstream parity](#upstream-parity) |
 | Check attributes against the file's `schemas` | implemented | `ifcx_alpha` | `openbim-ifcx` | Rules of upstream `schema-validation.ts` (`1a63082`), collecting every failure with node path, attribute id, and JSON pointer. Stricter than upstream for `Integer` fractions, array `min`/`max`, and non-object `Object` values; `Blob` is accepted unchecked, unknown `dataType`s are reported, `quantityKind` is not checked. Schema `inherits` is walked without recursion and each inherited schema is checked once per value, so long chains and diamond-shaped inheritance stay linear (a diamond's shared schema reports its failures once); inheritance cycles are reported. `IfcxFile::validate` checks only the file's own schemas; `LayerStack::validate` checks a stack built with its imports: the schemas of every layer, merged as `federate` does, against the attributes of every layer merged per path as flattening does; `validate_flat` checks flattened nodes. All 47 upstream examples validate via the opt-in `upstream_validation` test when their imported schema files are supplied, and the 37 upstream stacks that resolve against an offline `ifcx.dev` mirror validate with `LayerStack::validate` in the opt-in `upstream_layers` test (`1a63082`) |
-| Resolve imports | implemented | `ifcx_alpha` | `openbim-ifcx` | `layers::LayerStackBuilder` over a caller-supplied `LayerResolver`; each layer loads once, in upstream `IfcxLayerStackBuilder` order (`1a63082`); `federate` merges schemas and data in that order. Typed errors for missing layers, cycles, and `integrity` mismatch (SRI-style `sha256`/`sha384`/`sha512`, feature `integrity`, default on). `FsResolver` behind feature `fs`; no network access. `LayerStackBuilder::build_all` stacks several layers as the imports of a main layer without data, as upstream's `ifcx compose` does. All 41 upstream examples with imports build stacks via the opt-in `upstream_layers` test against an offline `ifcx.dev` mirror, except 4 that import `ifc-mat/prop@v1.0.0.ifcx`, which `ifcx.dev` does not serve |
+| Resolve imports | implemented | `ifcx_alpha` | `openbim-ifcx` | `layers::LayerStackBuilder` over a caller-supplied `LayerResolver`; each layer loads once, after the layers it imports, so a layer overrides its imports and the main layer comes last (buildingSMART/IFC5-development#144, agreed 2026-10-05; upstream's code at `1a63082` still uses the opposite order); `federate` merges schemas and data in that order with the main layer's header. Typed errors for missing layers, cycles, and `integrity` mismatch (SRI-style `sha256`/`sha384`/`sha512`, feature `integrity`, default on). `FsResolver` behind feature `fs`; no network access. `LayerStackBuilder::build_all` stacks several layers as the imports of a main layer without data, as upstream's `ifcx compose` does. All 41 upstream examples with imports build stacks via the opt-in `upstream_layers` test against an offline `ifcx.dev` mirror, except 4 that import `ifc-mat/prop@v1.0.0.ifcx`, which `ifcx.dev` does not serve |
 | World transforms through the node hierarchy | implemented | `ifcx_alpha` | `openbim-ifcx-geometry` | `usd::xformop` `{transform}` decodes to an affine `f64` `Transform` in USD's row-vector layout (translation in the last row, as upstream's viewer reads it); non-affine or malformed matrices are typed errors. `world_from_parent` composes a child's world matrix, inheriting when absent. The render scene walks the composed tree with it and exposes each drawn node's path and `f64` world matrix (`Instance::world`); the root's own transform applies, where upstream's viewer skips it on its attribute-less artificial root. All 41 840 upstream transforms (`1a63082`) decode via the opt-in `upstream_decode` test |
 | Triangle meshes | implemented | `ifcx_alpha` | `openbim-ifcx-geometry` | `usd::usdgeom::mesh` `{points, faceVertexIndices}` decodes to `TriangleMesh` (`f64` positions, `u32` indices, flat face normals). Out-of-range indices, counts not a multiple of 3, non-triangle `faceVertexCounts`, and wrong shapes are typed errors; polygons are not triangulated. All 1 925 upstream meshes (720 241 triangles) decode |
 | Polylines | implemented | `ifcx_alpha` | `openbim-ifcx-geometry` | `usd::usdgeom::basiscurves` `{points, curveVertexCounts?}` decodes to one `Polyline` per curve. A missing `type` is linear, as in upstream's viewer (USD's default would be cubic); any other `type` returns `CurveGeometry::Unsupported`. `wrap: periodic` closes the line. All 85 upstream curve attributes decode as linear |
@@ -43,32 +43,52 @@ findings carry regression tests in the crates' own suites (#41).
 
 ## Layer order and import priority
 
-Checked against `src/ifcx-core/layers/layer-stack.ts` and `Federate` in
-`src/ifcx-core/workflows.ts` of buildingSMART/IFC5-development at `1a63082`.
+A layer overrides the layers it imports, as a USD layer overrides its
+sublayers. The `ifcx_alpha` draft text (`schema/ifcx.tsp`, README,
+`Examples_FAQ.md`) states no priority between a layer and its imports, so
+we asked in buildingSMART/IFC5-development#144; on 2026-10-05 the
+maintainers agreed that "imported data should come 'before' the main data".
+`openbim-ifcx` implements that rule (openbimrs/ifcx#36):
 
-- The main layer is first. Each layer claims all of its not yet loaded
-  imports in written order, then each claimed import is followed by its own
-  new imports before the next one: `main → [a, b]`, `a → [c]` gives
-  `main, a, c, b`.
-- `Federate` concatenates schemas and data in that order, and composition
-  lets later opinions win. **So an import overrides the layer that imports
-  it**, later imports override earlier ones, and the main layer has the
-  lowest priority. A layer cannot override what it imports; to override a
-  dataset, a viewer or CLI lists it before the overriding file in a
-  synthetic main layer's imports (upstream's `compose3` and `ifcx compose`
-  do this with the files in user order, so the last file wins).
-- The `ifcx_alpha` draft text (`schema/ifcx.tsp`, README, `Examples_FAQ.md`)
-  states no priority between a layer and its imports; the FAQ only says an
-  added layer "will provide the new value". ADR 0002's "later opinions
-  override earlier ones" holds within this order. This is the opposite of
-  USD sublayers, where the importing layer is stronger.
-- Divergences from upstream: upstream's builder appends a nested subtree more
-  than once (`main → a → c` yields `main, c, a, c`); later occurrences win, so
-  composed values match the deduplicated order this crate uses, but the
-  position where a path or schema id first appears can differ. Upstream
-  accepts import cycles silently; this crate rejects them unless
-  `allow_cycles(true)` is set. Upstream does not check `integrity` (TODO in
-  its providers) and defines no format for it.
+- Every layer comes after its own imports, recursively, so a layer
+  overrides what it imports.
+- Sibling imports keep their written order, so a later import overrides an
+  earlier one.
+- Each layer appears once, where the depth-first walk from the main layer
+  first reaches it. A layer that an earlier sibling also imports is placed
+  under that sibling, which overrides it.
+- The main layer comes last and gives the federated header.
+- `main → [a, b]`, `a → [c]` gives `c, a, b, main`; `main → a → b` gives
+  `b, a, main`.
+- `LayerStack::layers`, `keys` and `into_layers` return this federation
+  order; `LayerStack::main` is the main layer, the last one.
+- `build_all` stacks the named layers as the imports of a synthetic main
+  layer without data, as upstream's `ifcx compose` and viewer do, so the
+  last named layer wins; it is the stack's `main` layer and gives the
+  header.
+- ADR 0002's "later opinions override earlier ones" holds within this
+  order.
+
+Divergences from upstream (`src/ifcx-core/layers/layer-stack.ts` and
+`Federate` in `src/ifcx-core/workflows.ts` at `1a63082`):
+
+- Upstream's code still uses the old order: the main layer first, and each
+  layer before its imports (`main, a, c, b` for the example above), so an
+  import overrides the layer importing it. A pull request bringing upstream
+  to the agreed order is pending; until it lands, a stack whose imports carry
+  `data` composes differently from upstream's main branch. Upstream's
+  examples import only schema files, which carry no `data`, so their
+  composed trees do not depend on the order (see Upstream parity).
+- Upstream's builder appends a nested subtree more than once (`main → a → c`
+  yields `main, c, a, c`); this crate lists each layer once.
+- Upstream accepts import cycles silently; this crate rejects them unless
+  `allow_cycles(true)` is set. Then the import that closes a cycle is
+  skipped: the layer it names is still being loaded, so it comes after the
+  importer and overrides it, and the main layer stays last
+  (`main → a → main` gives `a, main`).
+- Upstream does not check `integrity` (TODO in its providers) and defines no
+  format for it. This crate checks it on every import edge, also where the
+  imported layer is already loaded.
 
 ## Upstream parity
 
@@ -90,7 +110,7 @@ drift workflow.
 | 35 upstream examples composed alone | equal to upstream |
 | 12 upstream examples that reference nodes of other files (`Geotech` 2, `Hello Wall/advanced` 3, `Tunnel Excavation` 7), composed on top of every other file of their example folder in sorted order | equal to upstream |
 | 10 hand-written fixtures composed alone (`tests/fixtures/*.ifcx`) | 8 equal; `layer-base` and `layer-edit` reference nodes they do not define |
-| 2 hand-written layer stacks (`layer-base` + `layer-edit`, `layers/chain`) | reference nodes they do not define |
+| 2 hand-written layer stacks | `layers/chain` (as `sub/base`, `mid`, `main`, its federation order) equal; `layer-base` + `layer-edit` references nodes it does not define |
 
 - Upstream writes `-0` as `0` (JavaScript `JSON.stringify`); this crate keeps
   `-0.0` as read. The comparison reads `-0` as `0`; 11 examples and
@@ -99,8 +119,19 @@ drift workflow.
   case.
 - Known divergence: a reference to a node that no layer defines is
   `ComposeError::UnknownReference` here, while upstream composes an empty
-  node. The 4 fixture cases above report this and are not counted as
-  differences.
+  node. The 3 fixture cases above report this and are not counted as
+  differences. In the old layer order (`main`, `mid`, `sub/base`) the
+  `layers/chain` case was a fourth: `base` re-added the `Door` child that
+  `mid` deletes, and no layer defines `door`.
+- Temporary divergence in layer order: this crate federates every layer
+  after its imports, as agreed in buildingSMART/IFC5-development#144
+  (2026-10-05), while upstream's main branch at `1a63082` still places the
+  main layer first, until the pending upstream pull request lands. The
+  script does not resolve imports; it passes each case's files to both
+  sides in the same order (`layers/chain` as `sub/base`, `mid`, `main`, the
+  federation order). So no case depends on the order: every upstream
+  example imports only schema files, and the `upstream_layers`,
+  `upstream_composition` and `upstream_validation` results are unchanged.
 
 ## Not here
 

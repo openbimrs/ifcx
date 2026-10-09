@@ -122,9 +122,9 @@ test("the last layer wins, and imports resolve from memory", () => {
   assert.equal(roofClass(compose([model, overlay()])), "Roof");
   assert.equal(roofClass(compose([overlay(), model])), "Slab");
 
-  // In upstream order an import overrides the layer importing it.
+  // A layer overrides the layers it imports (buildingSMART/IFC5-development#144).
   const imports = { "model.ifcx": bytes("geometry-model.ifcx") };
-  assert.equal(roofClass(compose([overlay(["model.ifcx"])], { imports })), "Slab");
+  assert.equal(roofClass(compose([overlay(["model.ifcx"])], { imports })), "Roof");
   assert.equal(
     roofClass(compose([overlay(["model.ifcx"]), overlay()], { imports: new Map(Object.entries(imports)) })),
     "Roof",

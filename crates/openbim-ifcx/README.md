@@ -9,8 +9,8 @@ failure with its node path, attribute id, and JSON pointer
 (`LayerStackBuilder::build` for one main layer, `build_all` for several
 layers stacked as upstream's `ifcx compose` does), validates the stack
 against the schemas of all its layers (`LayerStack::validate`), and
-federates schemas and data in upstream order; in that order an imported
-layer overrides the layer that imports it. `flatten_owned` and
+federates schemas and data with every layer after the layers it imports,
+so a layer overrides its imports (buildingSMART/IFC5-development#144). `flatten_owned` and
 `LayerStack::into_federated` move nodes and attribute values instead of
 copying them, which makes flattening large models several times faster
 than `flatten` over borrowed nodes. The composed tree shares sub-trees between instances

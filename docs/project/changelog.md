@@ -107,6 +107,49 @@ latest release notes.
   cannot export instead of exiting silently. Found by the first upstream
   drift run (#56).
 
+### `openbim-ifcx`
+
+#### Changed
+
+- **Breaking:** a layer now overrides the layers it imports, as agreed
+  upstream in buildingSMART/IFC5-development#144 (2026-10-05): "imported
+  data should come 'before' the main data". `LayerStackBuilder` returns the
+  layers in federation order: every layer after its own imports,
+  recursively; sibling imports in written order, so a later import
+  overrides an earlier one; each layer once, where it is first reached; the
+  main layer last. `main → [a, b]`, `a → [c]` now gives `c, a, b, main`
+  (was `main, a, c, b`), and `main → a → b` gives `b, a, main` (was
+  `main, a, b`). Code relying on the old order, in which an import
+  overrode its importer and the main layer had the lowest priority, now
+  composes and validates differently whenever an import carries `data` or
+  redefines a schema. Upstream's code at `1a63082` still uses the old order
+  until a pending upstream pull request lands (#36).
+- **Breaking:** `LayerStack::layers`, `keys` and `into_layers` return the
+  federation order, so the main layer is last, not first;
+  `LayerStack::main` still returns the main layer. For `build_all`, `main`
+  is now the last layer of the stack, the strongest named one (was the
+  first named one), and the federated header is its header (#36).
+- **Breaking:** `federate` and `federate_owned` take the header of the last
+  file, the strongest, instead of the first; schemas and data are merged as
+  before. `LayerStack::federate` and `into_federated` thus keep the main
+  layer's header (#36).
+- `LayerStackBuilder::allow_cycles(true)` skips the import that closes a
+  cycle, as before; under the new order the layer that import names comes
+  after its importer, and the main layer stays last (`main → a → main`
+  gives `a, main`) (#36).
+- `LayerStackBuilder` walks imports without recursion, so a long import
+  chain cannot overflow the stack. `integrity` is still checked on every
+  import edge (#36).
+
+### `openbim-ifcx-geometry`
+
+#### Changed
+
+- `ifcx2glb --resolve-imports` stacks each layer after the layers it
+  imports, following `openbim-ifcx`'s new layer order
+  (buildingSMART/IFC5-development#144), so a layer overrides its imports.
+  The library API is unchanged (#36).
+
 ### `openbim-ifcx-binding-core`
 
 Not released on its own (`publish = false`): it ships inside the npm and
@@ -120,6 +163,12 @@ PyPI packages, whose changelogs name the releases.
   composition move the parsed layers instead of copying them
   (`federate_owned`, `LayerStack::into_federated`, `flatten_owned`) (#42,
   #43).
+- **Breaking:** `LayerSet` with imports puts every layer after the layers
+  it imports, so a layer overrides its imports
+  (buildingSMART/IFC5-development#144; was: an import overrode its
+  importer). The federated header is the strongest layer's, the last one,
+  with or without imports (was the first layer's). Composition and
+  validation results without imports are unchanged (#36).
 
 #### Added
 
@@ -130,6 +179,30 @@ PyPI packages, whose changelogs name the releases.
   tree, federated validation, GLB export through `openbim-ifcx-geometry`), validation reports with stable failure
   `kind` codes, and `BindingError` with the stable codes `read`, `write`,
   `layer`, `compose`, `invalid-argument` and `glb`.
+
+### `openbim-ifcx-py`
+
+#### Changed
+
+- **Breaking:** with imports resolved, a layer now overrides the layers it
+  imports, as agreed upstream in buildingSMART/IFC5-development#144 (was:
+  an import overrode the layer importing it). `compose`, `validate` and
+  GLB export give different results when an import carries `data` or
+  redefines a schema that a layer also sets. Layers given without imports,
+  and imports that carry only schemas, compose as before; a later layer
+  still overrides an earlier one and everything it imports (#36).
+
+### `openbim-ifcx-wasm`
+
+#### Changed
+
+- **Breaking:** with imports resolved, a layer now overrides the layers it
+  imports, as agreed upstream in buildingSMART/IFC5-development#144 (was:
+  an import overrode the layer importing it). `compose`, `validate` and
+  GLB export give different results when an import carries `data` or
+  redefines a schema that a layer also sets. Layers given without imports,
+  and imports that carry only schemas, compose as before; a later layer
+  still overrides an earlier one and everything it imports (#36).
 
 ## Releases
 

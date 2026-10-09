@@ -133,9 +133,9 @@ schemas and data are concatenated in order, as upstream's `Federate` does.
 With `options.imports` (an object or a `Map` from the exact import `uri` to
 a file), the layers become the imports of a synthetic main layer, as
 upstream's `ifcx compose` command builds it, and every import must be
-supplied. `integrity` values are checked against the supplied bytes. In
-upstream order an import overrides the layer that imports it, and a later
-layer overrides both. The WebAssembly module never touches the network or
+supplied. `integrity` values are checked against the supplied bytes. A
+layer overrides the layers it imports, as agreed upstream in
+buildingSMART/IFC5-development#144, and a later layer overrides both. The WebAssembly module never touches the network or
 the filesystem.
 
 **Fetching imports.** `fetchImports(layers, options?)` collects them for

@@ -9,10 +9,10 @@
 //! without data, as upstream's `ifcx compose` builds it
 //! (`LayerStackBuilder::build_all`), and resolved through a
 //! [`MemoryResolver`] holding the given files under their exact import
-//! `uri`. In upstream order an import overrides the layer importing it, so a
-//! layer's imports override that layer, and the next layer overrides both.
-//! Every import must then be present; `integrity` values are checked against
-//! the given bytes.
+//! `uri`. Every layer comes after the layers it imports and overrides them,
+//! as agreed upstream in buildingSMART/IFC5-development#144, and the next
+//! layer overrides both. Every import must then be present; `integrity`
+//! values are checked against the given bytes.
 
 use openbim_ifcx::layers::{federate_owned, LayerStackBuilder, MemoryResolver};
 use openbim_ifcx::{compose, flatten_owned, Composition, IfcxFile};
@@ -91,9 +91,9 @@ impl LayerSet {
 
     /// All layers merged into one file. Without imports, the layers' schemas
     /// and data are concatenated in order. With imports, the layers are the
-    /// imports of a synthetic main layer, resolved in upstream order, so a
-    /// layer's imports override it and the next layer overrides both; the
-    /// first layer's header leads the result.
+    /// imports of a synthetic main layer, each after the layers it imports,
+    /// so a layer overrides its imports and the next layer overrides both.
+    /// The header is that of the last layer in this order, the strongest.
     pub fn federate(&self) -> Result<IfcxFile, BindingError> {
         if self.layers.is_empty() {
             return Err(BindingError::InvalidArgument(
@@ -135,7 +135,7 @@ impl LayerSet {
         let stack = LayerStackBuilder::new(resolver)
             .build_all(&keys)
             .map_err(|e| BindingError::Layer(e.to_string()))?;
-        // The first layer's header leads, as without imports.
+        // The strongest layer's header leads, as without imports.
         Ok(stack.into_federated())
     }
 
@@ -245,16 +245,25 @@ mod tests {
     }
 
     #[test]
-    fn imports_resolve_from_memory_and_override_their_importer() {
-        // In upstream order an import overrides the layer importing it.
+    fn imports_resolve_from_memory_and_the_importer_overrides_them() {
+        // A layer overrides the layers it imports
+        // (buildingSMART/IFC5-development#144).
         let mut layers = set(&[&overlay(&["model.ifcx"])]);
         layers.add_import(
             "model.ifcx".into(),
             fixture!("geometry-model.ifcx").to_vec(),
         );
-        assert_eq!(roof_class(&tree(&layers)), "Slab");
+        assert_eq!(roof_class(&tree(&layers)), "Roof");
 
         // A later layer overrides an earlier one and everything it imports.
+        let mut layers = set(&[&overlay(&["model.ifcx"]), fixture!("geometry-model.ifcx")]);
+        layers.add_import(
+            "model.ifcx".into(),
+            fixture!("geometry-model.ifcx").to_vec(),
+        );
+        // Named as a layer of its own, the model is a different layer from
+        // the import and, coming last, wins.
+        assert_eq!(roof_class(&tree(&layers)), "Slab");
         let mut layers = set(&[&overlay(&["model.ifcx"]), &overlay(&[])]);
         layers.add_import(
             "model.ifcx".into(),
@@ -267,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn a_chain_resolves_with_integrity_in_upstream_order() {
+    fn a_chain_resolves_with_integrity_and_the_main_layer_wins() {
         let mut layers = set(&[fixture!("layers/chain/main.ifcx")]);
         layers.add_import(
             "mid.ifcx".into(),
@@ -289,6 +298,8 @@ mod tests {
             layer["data"].as_array().unwrap().len()
         };
         assert_eq!(file.data.len(), ids("main") + ids("mid") + ids("base"));
+        // `main`'s data comes last and wins.
+        assert_eq!(file.data.last().unwrap().path, "site");
         // Schemas from every layer of the stack are merged for validation.
         let report: Value = serde_json::from_str(&layers.validate_json().unwrap()).unwrap();
         assert_eq!(report["valid"], true, "{report}");

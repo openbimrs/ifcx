@@ -78,6 +78,12 @@ PyPI packages, whose changelogs name the releases.
   composition move the parsed layers instead of copying them
   (`federate_owned`, `LayerStack::into_federated`, `flatten_owned`) (#42,
   #43).
+- **Breaking:** `LayerSet` with imports puts every layer after the layers
+  it imports, so a layer overrides its imports
+  (buildingSMART/IFC5-development#144; was: an import overrode its
+  importer). The federated header is the strongest layer's, the last one,
+  with or without imports (was the first layer's). Composition and
+  validation results without imports are unchanged (#36).
 
 #### Added
 

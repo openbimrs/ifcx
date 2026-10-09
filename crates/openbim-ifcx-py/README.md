@@ -74,9 +74,9 @@ schemas and data are concatenated in order, as upstream's `Federate` does.
 With `imports` (a mapping from the exact import `uri` to a file, possibly
 empty), the layers become the imports of a synthetic main layer, as
 upstream's `ifcx compose` command builds it, and every import must be
-supplied. `integrity` values are checked against the supplied bytes. In
-upstream order an import overrides the layer that imports it, and a later
-layer overrides both. Nothing is fetched from the network or the
+supplied. `integrity` values are checked against the supplied bytes. A
+layer overrides the layers it imports, as agreed upstream in
+buildingSMART/IFC5-development#144, and a later layer overrides both. Nothing is fetched from the network or the
 filesystem.
 
 **GLB export.** `export_glb` writes the render scene of the composed tree:

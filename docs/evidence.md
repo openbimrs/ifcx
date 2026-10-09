@@ -51,7 +51,7 @@ Recorded against buildingSMART/IFC5-development [`1a63082`](https://github.com/b
 | `decode` | Decodes every transform, mesh, curve, point cloud and presentation attribute (`upstream_decode`) | `47 files: 41840 transforms; 1925 meshes (720241 triangles, 522435 vertices); 85 curve attributes (85 polylines, 9946 vertices, 0 unsupported); 0 null deletions; 0 failures` |
 |  |  | `47 files: point clouds pcd 2, array 4, base64 2 (102761 points, 4 coloured); visibility 62, diffuseColor 9366, opacity 458, gltf::material 2 (2 PBR); 0 failures` |
 | `scene` | Builds the render scene of every example (`upstream_scene`) | `47 files: 26218 instances, 4181777 triangles, 9884 segments, 102761 points, 0 warnings` |
-| `parity` | Compares composed trees with upstream's TypeScript (`scripts/upstream-parity.sh`) | `59 cases: 55 match, 4 known divergences, 0 differ` |
+| `parity` | Compares composed trees with upstream's TypeScript (`scripts/upstream-parity.sh`) | `59 cases: 56 match, 3 known divergences, 0 differ` |
 | `gltf` | Exports fixtures and examples to GLB and runs the Khronos glTF validator (`scripts/gltf-validate.sh`) | `51 files: 0 errors, 0 warnings, 16 infos, 0 hints` |
 
 <!-- UPSTREAM:BASELINE:END -->

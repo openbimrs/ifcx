@@ -69,9 +69,9 @@ cargo run --release -p openbim-ifcx-geometry --example ifcx2glb -- \
 ```
 
 Without `--resolve-imports`, `imports` are ignored. With it, every layer's
-imports load through `openbim_ifcx::layers::FsResolver`, in upstream order
-(each layer's imports override it, the next layer overrides both); nothing
-is fetched from the network.
+imports load through `openbim_ifcx::layers::FsResolver`, each layer after
+the layers it imports (a layer overrides its imports, the next layer
+overrides both); nothing is fetched from the network.
 
 `scripts/gltf-validate.sh` (opt-in, needs Node.js) exports the fixtures and,
 with `IFCX_UPSTREAM_DIR`, every upstream example, and checks them with the
@@ -149,6 +149,15 @@ The crate root, as rustdoc shows it. Follow a name to its rustdoc entry.
 - Used by [`openbim-ifcx-binding-core`](./openbim-ifcx-binding-core)
 
 ## Changes
+
+Unreleased, on `main`:
+
+#### Changed
+
+- `ifcx2glb --resolve-imports` stacks each layer after the layers it
+  imports, following `openbim-ifcx`'s new layer order
+  (buildingSMART/IFC5-development#144), so a layer overrides its imports.
+  The library API is unchanged (#36).
 
 Latest release, 0.1.1 (2026-10-03):
 
