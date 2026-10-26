@@ -13,7 +13,7 @@ Renderer-neutral geometry and viewer helpers for IFC5 / IFCX: transforms, meshes
 | Latest release | 0.1.1 (2026-10-03) |
 | Distributed as | [crates.io `openbim-ifcx-geometry`](https://crates.io/crates/openbim-ifcx-geometry) |
 | Install | `cargo add openbim-ifcx-geometry` |
-| Requires | Rust `1.88.0` |
+| Requires | Rust `1.99.0` |
 | License | MIT |
 | API documentation | [rustdoc](/api/rustdoc/openbim_ifcx_geometry/index.html){target="_self"} · [docs.rs](https://docs.rs/openbim-ifcx-geometry) |
 | Source | [`crates/openbim-ifcx-geometry/`](https://github.com/openbimrs/ifcx/tree/main/crates/openbim-ifcx-geometry) |

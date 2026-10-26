@@ -254,7 +254,7 @@ fn base64_triples<T>(
         bytes,
         element_size: 12,
     };
-    if bytes % 12 != 0 {
+    if !bytes.is_multiple_of(12) {
         return Err(byte_length());
     }
 
@@ -272,7 +272,9 @@ fn base64_triples<T>(
         }
         out.extend(
             buffer[..written]
-                .chunks_exact(12)
+                .as_chunks::<12>()
+                .0
+                .iter()
                 .map(|t| convert([f32_le(&t[0..4]), f32_le(&t[4..8]), f32_le(&t[8..12])])),
         );
     }

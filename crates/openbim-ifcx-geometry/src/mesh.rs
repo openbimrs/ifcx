@@ -89,7 +89,7 @@ impl TriangleMesh {
     /// Builds a mesh from positions and triangle indices, checking the
     /// indices and computing face normals.
     pub fn new(positions: Vec<Vec3>, indices: Vec<u32>) -> Result<Self, DecodeError> {
-        if indices.len() % 3 != 0 {
+        if !indices.len().is_multiple_of(3) {
             return Err(DecodeError::NotTriangles {
                 index_count: indices.len(),
             });
@@ -106,7 +106,9 @@ impl TriangleMesh {
             });
         }
         let face_normals = indices
-            .chunks_exact(3)
+            .as_chunks::<3>()
+            .0
+            .iter()
             .map(|t| {
                 let [a, b, c] = [0, 1, 2].map(|k| positions[t[k] as usize]);
                 normalize_or_zero(cross(sub(b, a), sub(c, a)))
@@ -126,7 +128,11 @@ impl TriangleMesh {
 
     /// Triangles as index triples.
     pub fn triangles(&self) -> impl Iterator<Item = [u32; 3]> + '_ {
-        self.indices.chunks_exact(3).map(|t| [t[0], t[1], t[2]])
+        self.indices
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .map(|t| [t[0], t[1], t[2]])
     }
 }
 

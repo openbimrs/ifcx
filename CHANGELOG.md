@@ -91,6 +91,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Raise MSRV to Rust 1.99.
+
 - GitHub Pages serves the documentation site at
   <https://openbimrs.github.io/ifcx/>, with rustdoc under `/api/rustdoc/`
   and the viewer moved to <https://openbimrs.github.io/ifcx/viewer/> (Vite

@@ -50,7 +50,7 @@ gate_rust() {
     fi
     # Every publishable crate must package and build from its .crate alone.
     cargo package --locked -p openbim-ifcx
-    # Cargo 1.88 resolves a packaged crate's dependencies from crates.io
+    # Cargo resolves a packaged crate's dependencies from crates.io
     # only, so geometry cannot be packaged while it requires an
     # openbim-ifcx version that is not released yet (the window between a
     # version bump and the openbim-ifcx release). Release openbim-ifcx

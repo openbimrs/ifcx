@@ -12,7 +12,7 @@ Host-independent core shared by the openbim-ifcx language bindings (WebAssembly,
 | --- | --- |
 | Latest release | not released |
 | Distributed as | not published on its own (`publish = false`); ships inside the bindings |
-| Requires | Rust `1.88.0` |
+| Requires | Rust `1.99.0` |
 | License | MIT |
 | API documentation | [rustdoc](/api/rustdoc/openbim_ifcx_binding_core/index.html){target="_self"} |
 | Source | [`crates/openbim-ifcx-binding-core/`](https://github.com/openbimrs/ifcx/tree/main/crates/openbim-ifcx-binding-core) |

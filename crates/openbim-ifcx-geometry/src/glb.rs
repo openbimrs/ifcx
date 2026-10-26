@@ -164,7 +164,7 @@ pub fn to_glb(scene: &RenderScene, options: &GlbOptions) -> Result<Vec<u8>, GlbE
 }
 
 fn pad(bytes: &mut Vec<u8>, with: u8) {
-    while bytes.len() % 4 != 0 {
+    while !bytes.len().is_multiple_of(4) {
         bytes.push(with);
     }
 }

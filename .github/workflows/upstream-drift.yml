@@ -77,10 +77,8 @@ jobs:
           ref: ${{ inputs.upstream_ref }}
           path: .upstream/IFC5-development
           persist-credentials: false
-      - name: Install Rust 1.88.0
-        uses: dtolnay/rust-toolchain@688313b0823df1393bcebb1b4add0438a6d36884 # 1.88.0
-        with:
-          toolchain: 1.88.0
+      - name: Install Rust 1.99.1
+        uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99.1
       - name: Cache Rust build
         # Its own key, so it never evicts or feeds the CI gate's caches.
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2

@@ -13,7 +13,7 @@ Lossless reader and writer for IFC5 / IFCX files, the layered JSON model.
 | Latest release | 0.1.1 (2026-10-03) |
 | Distributed as | [crates.io `openbim-ifcx`](https://crates.io/crates/openbim-ifcx) |
 | Install | `cargo add openbim-ifcx` |
-| Requires | Rust `1.88.0` |
+| Requires | Rust `1.99.0` |
 | License | MIT |
 | API documentation | [rustdoc](/api/rustdoc/openbim_ifcx/index.html){target="_self"} · [docs.rs](https://docs.rs/openbim-ifcx) |
 | Source | [`crates/openbim-ifcx/`](https://github.com/openbimrs/ifcx/tree/main/crates/openbim-ifcx) |

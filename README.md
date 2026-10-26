@@ -53,7 +53,7 @@ The crates, generated from their manifests and changelogs:
 cargo run -p xtask -- docs   # after changing a README, changelog, manifest or API
 ```
 
-Rust 2021, MSRV 1.88, pure Rust, no `unsafe`. The `bindings` section of the
+Rust 2021, MSRV 1.99, pure Rust, no `unsafe`. The `bindings` section of the
 gate also needs `wasm-bindgen-cli` 0.2.128, Node, Chrome or Chromium, `uv`,
 and `maturin`; see
 [CONTRIBUTING.md](CONTRIBUTING.md), which also explains how the
