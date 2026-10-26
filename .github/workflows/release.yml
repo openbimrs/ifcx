@@ -121,7 +121,7 @@ jobs:
         # exist and still be refused for the crate being released.
         id: auth
         continue-on-error: true
-        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
       - name: Publish
         # --publish-here skips a version that is already live, so the
         # fallback retry with the long-lived secret is safe: it can only
@@ -168,7 +168,7 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
@@ -177,7 +177,7 @@ jobs:
         # Trusted publishing needs npm >= 11.5.1; Node 22 ships npm 10.
         run: npm install --global npm@^11.5.1 && npm --version
       - name: Install wasm-bindgen CLI
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           tool: wasm-bindgen-cli@0.2.128
       - name: Build and test the package
@@ -227,7 +227,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
       - name: Build wheel
@@ -245,7 +245,7 @@ jobs:
           cd "$RUNNER_TEMP"
           python -m unittest discover -s "$GITHUB_WORKSPACE/crates/openbim-ifcx-py/tests/python" -t "$GITHUB_WORKSPACE/crates/openbim-ifcx-py/tests/python"
       - name: Upload wheel
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wheel-${{ matrix.name }}
           path: dist/*.whl
@@ -266,7 +266,7 @@ jobs:
           command: sdist
           args: --out dist --manifest-path crates/openbim-ifcx-py/Cargo.toml
       - name: Upload sdist
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -285,13 +285,13 @@ jobs:
       id-token: write # PyPI trusted publishing (OIDC)
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: dist
           merge-multiple: true
       - name: List distributions
         run: ls -la dist
       - name: Publish
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true
