@@ -53,7 +53,7 @@ jobs:
         # Must equal the `wasm-bindgen` pin in crates/openbim-ifcx-wasm/Cargo.toml;
         # build-npm-pkg.sh refuses a mismatch.
         if: matrix.section == 'bindings'
-        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
         with:
           tool: wasm-bindgen-cli@0.2.128
       - name: Set up Python
