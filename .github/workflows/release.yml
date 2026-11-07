@@ -177,7 +177,7 @@ jobs:
         # Trusted publishing needs npm >= 11.5.1; Node 22 ships npm 10.
         run: npm install --global npm@^11.5.1 && npm --version
       - name: Install wasm-bindgen CLI
-        uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:
           tool: wasm-bindgen-cli@0.2.128
       - name: Build and test the package
